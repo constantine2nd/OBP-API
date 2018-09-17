@@ -38,6 +38,7 @@ trait V310ServerSetup extends ServerSetupWithTestData with User1AllPrivileges wi
 
   def randomPrivateAccount(bankId : String): AccountJSON = {
     val accountsJson = getPrivateAccounts(bankId, user1).body.extract[AccountsJSON].accounts
+    org.scalameta.logger.elem(accountsJson)
     val randomPosition = nextInt(accountsJson.size)
     accountsJson(randomPosition)
   }

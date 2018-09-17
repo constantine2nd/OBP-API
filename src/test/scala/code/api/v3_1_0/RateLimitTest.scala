@@ -37,7 +37,7 @@ class RateLimitTest extends V310ServerSetup {
     LimitCallsUtil.port = mockRedis.getBindPort
     LimitCallsUtil.url = mockRedis.getHost
     LimitCallsUtil.jedis = new Jedis(mockRedis.getHost, mockRedis.getBindPort)
-    val Some((c, _)) = user1
+    val Some((c, _)) = user3
     consumerId = Consumers.consumers.vend.getConsumerByConsumerKey(c.key).map(_.id.get).getOrElse(0)
   }
 
@@ -77,7 +77,7 @@ class RateLimitTest extends V310ServerSetup {
     }
     scenario("We will try to set calls limit per minute without a proper Role " + ApiRole.canGetConsumers, ApiEndpoint, VersionOfApi) {
       When("We make a request v3.1.0 without a Role " + ApiRole.canSetCallLimit)
-      val request310 = (v3_1_0_Request / "management" / "consumers" / consumerId / "consumer" / "calls_limit").PUT <@(user1)
+      val request310 = (v3_1_0_Request / "management" / "consumers" / consumerId / "consumer" / "calls_limit").PUT <@(user3)
       val response310 = makePutRequest(request310, write(callLimitJson1))
       Then("We should get a 403")
       org.scalameta.logger.elem(response310.body)
@@ -87,8 +87,8 @@ class RateLimitTest extends V310ServerSetup {
     }
     scenario("We will try to set calls limit per minute with a proper Role " + ApiRole.canGetConsumers, ApiEndpoint, VersionOfApi) {
       When("We make a request v3.1.0 with a Role " + ApiRole.canSetCallLimit)
-      Entitlement.entitlement.vend.addEntitlement("", resourceUser1.userId, ApiRole.CanSetCallLimit.toString)
-      val request310 = (v3_1_0_Request / "management" / "consumers" / consumerId / "consumer" / "calls_limit").PUT <@(user1)
+      Entitlement.entitlement.vend.addEntitlement("", resourceUser3.userId, ApiRole.CanSetCallLimit.toString)
+      val request310 = (v3_1_0_Request / "management" / "consumers" / consumerId / "consumer" / "calls_limit").PUT <@(user3)
       val response310 = makePutRequest(request310, write(callLimitJson1))
       Then("We should get a 200")
       org.scalameta.logger.elem(response310.body)
@@ -98,8 +98,8 @@ class RateLimitTest extends V310ServerSetup {
     scenario("We will set calls limit per minute for a Consumer", ApiEndpoint, VersionOfApi) {
       if(APIUtil.getPropsAsBoolValue("use_consumer_limits", false)) {
         When("We make a request v3.1.0 with a Role " + ApiRole.canSetCallLimit)
-        Entitlement.entitlement.vend.addEntitlement("", resourceUser1.userId, ApiRole.CanSetCallLimit.toString)
-        val request310 = (v3_1_0_Request / "management" / "consumers" / consumerId / "consumer" / "calls_limit").PUT <@(user1)
+        Entitlement.entitlement.vend.addEntitlement("", resourceUser3.userId, ApiRole.CanSetCallLimit.toString)
+        val request310 = (v3_1_0_Request / "management" / "consumers" / consumerId / "consumer" / "calls_limit").PUT <@(user3)
         val response01 = makePutRequest(request310, write(callLimitJson2))
         org.scalameta.logger.elem(response01.body)
         Then("We should get a 200")

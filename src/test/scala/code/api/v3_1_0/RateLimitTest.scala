@@ -1,19 +1,20 @@
 package code.api.v3_1_0
 
+import ai.grakn.redismock.RedisServer
 import code.api.ErrorMessage
 import code.api.util.APIUtil.OAuth._
-import code.api.util.{APIUtil, ApiRole, ApiVersion}
 import code.api.util.ApiRole.CanSetCallLimit
 import code.api.util.ErrorMessages.{UserHasMissingRoles, UserNotLoggedIn}
+import code.api.util.{APIUtil, ApiRole, ApiVersion, LimitCallsUtil}
 import code.api.v3_1_0.OBPAPI3_1_0.Implementations3_1_0
 import code.consumer.Consumers
 import code.entitlement.Entitlement
 import com.github.dwickern.macros.NameOf.nameOf
-import com.github.sebruck.EmbeddedRedis
 import net.liftweb.json.Serialization.write
 import org.scalatest.Tag
+import redis.clients.jedis.Jedis
 
-class RateLimitTest extends V310ServerSetup with EmbeddedRedis {
+class RateLimitTest extends V310ServerSetup {
 
   /**
     * Test tags
@@ -24,6 +25,23 @@ class RateLimitTest extends V310ServerSetup with EmbeddedRedis {
     */
   object VersionOfApi extends Tag(ApiVersion.v3_1_0.toString)
   object ApiEndpoint extends Tag(nameOf(Implementations3_1_0.callsLimit))
+
+  private var mockRedis: RedisServer = null
+
+  override def beforeAll() {
+    super.beforeAll()
+    mockRedis = RedisServer.newRedisServer() // bind to a random port
+    mockRedis.start()
+    LimitCallsUtil.port = mockRedis.getBindPort
+    LimitCallsUtil.url = mockRedis.getHost
+    LimitCallsUtil.jedis = new Jedis(mockRedis.getHost, mockRedis.getBindPort)
+  }
+
+  override def afterAll() {
+    super.afterAll()
+    mockRedis.stop()
+    mockRedis = null
+  }
 
   val callLimitJson1 = CallLimitJson(
     per_minute_call_limit = "-1",
@@ -79,30 +97,27 @@ class RateLimitTest extends V310ServerSetup with EmbeddedRedis {
       response310.body.extract[CallLimitJson]
     }
     scenario("We will set calls limit per minute for a Consumer", ApiEndpoint, VersionOfApi) {
-      withRedis() {
-        port =>
-          if(APIUtil.getPropsAsBoolValue("use_consumer_limits", false)) {
-            When("We make a request v3.1.0 with a Role " + ApiRole.canSetCallLimit)
-            val Some((c, _)) = user1
-            val consumerId = Consumers.consumers.vend.getConsumerByConsumerKey(c.key).map(_.id.get).getOrElse(0)
-            Entitlement.entitlement.vend.addEntitlement("", resourceUser1.userId, ApiRole.CanSetCallLimit.toString)
-            val request310 = (v3_1_0_Request / "management" / "consumers" / consumerId / "consumer" / "calls_limit").PUT <@(user1)
-            val response01 = makePutRequest(request310, write(callLimitJson2))
-            Then("We should get a 200")
-            response01.code should equal(200)
+      if(APIUtil.getPropsAsBoolValue("use_consumer_limits", false)) {
+        When("We make a request v3.1.0 with a Role " + ApiRole.canSetCallLimit)
+        val Some((c, _)) = user1
+        val consumerId = Consumers.consumers.vend.getConsumerByConsumerKey(c.key).map(_.id.get).getOrElse(0)
+        Entitlement.entitlement.vend.addEntitlement("", resourceUser1.userId, ApiRole.CanSetCallLimit.toString)
+        val request310 = (v3_1_0_Request / "management" / "consumers" / consumerId / "consumer" / "calls_limit").PUT <@(user1)
+        val response01 = makePutRequest(request310, write(callLimitJson2))
+        org.scalameta.logger.elem(response01.body)
+        Then("We should get a 200")
+        response01.code should equal(200)
 
-            When("We make the first call after update")
-            val response02 = makePutRequest(request310, write(callLimitJson2))
-            Then("We should get a 200")
-            response02.code should equal(200)
+        When("We make the first call after update")
+        val response02 = makePutRequest(request310, write(callLimitJson2))
+        Then("We should get a 200")
+        response02.code should equal(200)
 
-            When("We make the second call after update")
-            val response03 = makePutRequest(request310, write(callLimitJson2))
-            Then("We should get a 429")
-            response03.code should equal(429)
-          }
+        When("We make the second call after update")
+        val response03 = makePutRequest(request310, write(callLimitJson2))
+        Then("We should get a 429")
+        response03.code should equal(429)
       }
-        succeed
     }
   }
 

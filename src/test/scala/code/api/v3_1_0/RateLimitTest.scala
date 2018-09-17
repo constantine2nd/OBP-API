@@ -30,6 +30,7 @@ class RateLimitTest extends V310ServerSetup {
 
   override def beforeAll() {
     super.beforeAll()
+    LimitCallsUtil.useConsumerLimits = true
     mockRedis = RedisServer.newRedisServer() // bind to a random port
     mockRedis.start()
     LimitCallsUtil.port = mockRedis.getBindPort
@@ -41,6 +42,7 @@ class RateLimitTest extends V310ServerSetup {
     super.afterAll()
     mockRedis.stop()
     mockRedis = null
+    LimitCallsUtil.useConsumerLimits = false
   }
 
   val callLimitJson1 = CallLimitJson(

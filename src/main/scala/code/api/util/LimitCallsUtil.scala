@@ -2,7 +2,6 @@ package code.api.util
 
 import code.api.util.LimitCallPeriod.LimitCallPeriod
 import code.util.Helper.MdcLoggable
-import net.liftweb.util.Props
 import redis.clients.jedis.Jedis
 
 
@@ -47,7 +46,7 @@ object LimitCallsUtil extends MdcLoggable {
 
   var url = APIUtil.getPropsValue("redis_address", "127.0.0.1")
   var port = APIUtil.getPropsAsIntValue("redis_port", 6378)
-  val useConsumerLimits = APIUtil.getPropsAsBoolValue("use_consumer_limits", false)
+  var useConsumerLimits = APIUtil.getPropsAsBoolValue("use_consumer_limits", false)
   var jedis = new Jedis(url, port)
 
   private def createUniqueKey(consumerKey: String, period: LimitCallPeriod) = consumerKey + LimitCallPeriod.toString(period)

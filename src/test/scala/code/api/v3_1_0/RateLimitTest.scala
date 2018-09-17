@@ -27,6 +27,7 @@ class RateLimitTest extends V310ServerSetup {
   object ApiEndpoint extends Tag(nameOf(Implementations3_1_0.callsLimit))
 
   private var mockRedis: RedisServer = null
+  var consumerId: Long = 0
 
   override def beforeAll() {
     super.beforeAll()
@@ -36,6 +37,8 @@ class RateLimitTest extends V310ServerSetup {
     LimitCallsUtil.port = mockRedis.getBindPort
     LimitCallsUtil.url = mockRedis.getHost
     LimitCallsUtil.jedis = new Jedis(mockRedis.getHost, mockRedis.getBindPort)
+    val Some((c, _)) = user1
+    consumerId = Consumers.consumers.vend.getConsumerByConsumerKey(c.key).map(_.id.get).getOrElse(0)
   }
 
   override def afterAll() {
@@ -65,8 +68,6 @@ class RateLimitTest extends V310ServerSetup {
 
     scenario("We will try to set calls limit per minute for a Consumer - unauthorized access", ApiEndpoint, VersionOfApi) {
       When("We make a request v3.1.0")
-      val Some((c, _)) = user1
-      val consumerId = Consumers.consumers.vend.getConsumerByConsumerKey(c.key).map(_.id.get).getOrElse(0)
       val request310 = (v3_1_0_Request / "management" / "consumers" / consumerId / "consumer" / "calls_limit").PUT
       val response310 = makePutRequest(request310, write(callLimitJson1))
       Then("We should get a 400")
@@ -76,8 +77,6 @@ class RateLimitTest extends V310ServerSetup {
     }
     scenario("We will try to set calls limit per minute without a proper Role " + ApiRole.canGetConsumers, ApiEndpoint, VersionOfApi) {
       When("We make a request v3.1.0 without a Role " + ApiRole.canSetCallLimit)
-      val Some((c, _)) = user1
-      val consumerId = Consumers.consumers.vend.getConsumerByConsumerKey(c.key).map(_.id.get).getOrElse(0)
       val request310 = (v3_1_0_Request / "management" / "consumers" / consumerId / "consumer" / "calls_limit").PUT <@(user1)
       val response310 = makePutRequest(request310, write(callLimitJson1))
       Then("We should get a 403")
@@ -88,8 +87,6 @@ class RateLimitTest extends V310ServerSetup {
     }
     scenario("We will try to set calls limit per minute with a proper Role " + ApiRole.canGetConsumers, ApiEndpoint, VersionOfApi) {
       When("We make a request v3.1.0 with a Role " + ApiRole.canSetCallLimit)
-      val Some((c, _)) = user1
-      val consumerId = Consumers.consumers.vend.getConsumerByConsumerKey(c.key).map(_.id.get).getOrElse(0)
       Entitlement.entitlement.vend.addEntitlement("", resourceUser1.userId, ApiRole.CanSetCallLimit.toString)
       val request310 = (v3_1_0_Request / "management" / "consumers" / consumerId / "consumer" / "calls_limit").PUT <@(user1)
       val response310 = makePutRequest(request310, write(callLimitJson1))
@@ -101,8 +98,6 @@ class RateLimitTest extends V310ServerSetup {
     scenario("We will set calls limit per minute for a Consumer", ApiEndpoint, VersionOfApi) {
       if(APIUtil.getPropsAsBoolValue("use_consumer_limits", false)) {
         When("We make a request v3.1.0 with a Role " + ApiRole.canSetCallLimit)
-        val Some((c, _)) = user1
-        val consumerId = Consumers.consumers.vend.getConsumerByConsumerKey(c.key).map(_.id.get).getOrElse(0)
         Entitlement.entitlement.vend.addEntitlement("", resourceUser1.userId, ApiRole.CanSetCallLimit.toString)
         val request310 = (v3_1_0_Request / "management" / "consumers" / consumerId / "consumer" / "calls_limit").PUT <@(user1)
         val response01 = makePutRequest(request310, write(callLimitJson2))

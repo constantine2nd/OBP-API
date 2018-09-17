@@ -24,17 +24,22 @@ trait DefaultUsers {
   lazy val userId = Some(UUID.randomUUID.toString)
 
   //create the application(consumer, used it in the Login credential, mainly used the consume_key and consumer_secret)
-  lazy val testConsumer = Consumers.consumers.vend.createConsumer(
-    key = Some(randomString(40).toLowerCase),
-    secret = Some(randomString(40).toLowerCase),
-    isActive = Some(true),
-    name = Some("test application"),
-    appType = None,
-    description = None,
-    developerEmail = None,
-    redirectURL = None,
-    createdByUserId = userId
-  ).openOrThrowException(attemptedToOpenAnEmptyBox)
+  lazy val testConsumer = {
+    val consumer = Consumers.consumers.vend.createConsumer(
+      key = Some(randomString(40).toLowerCase),
+      secret = Some(randomString(40).toLowerCase),
+      isActive = Some(true),
+      name = Some("test application"),
+      appType = None,
+      description = None,
+      developerEmail = None,
+      redirectURL = None,
+      createdByUserId = userId
+    ).openOrThrowException(attemptedToOpenAnEmptyBox)
+    org.scalameta.logger.elem("____________________________________________________________________________")
+    org.scalameta.logger.elem(consumer)
+    consumer
+  }
   lazy val consumer = Consumer(testConsumer.key.get, testConsumer.secret.get)
   
   // create the access token

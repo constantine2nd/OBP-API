@@ -45,10 +45,10 @@ object LimitCallPeriod extends Enumeration {
 
 object LimitCallsUtil extends MdcLoggable {
 
-  var url = APIUtil.getPropsValue("redis_address", "127.0.0.1")
-  var port = APIUtil.getPropsAsIntValue("redis_port", 6378)
-  var useConsumerLimits = APIUtil.getPropsAsBoolValue("use_consumer_limits", false)
-  var jedis = new Jedis(url, port)
+  lazy val url = APIUtil.getPropsValue("redis_address", "127.0.0.1")
+  lazy val port = APIUtil.getPropsAsIntValue("redis_port", 6378)
+  lazy val useConsumerLimits = APIUtil.getPropsAsBoolValue("use_consumer_limits", false)
+  lazy val jedis = new Jedis(url, port)
 
   private def createUniqueKey(consumerKey: String, period: LimitCallPeriod) = consumerKey + LimitCallPeriod.toString(period)
 

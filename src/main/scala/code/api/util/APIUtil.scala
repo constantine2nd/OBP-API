@@ -1995,11 +1995,11 @@ Returns a string showed to the developer
         cc.consumer match {
           case Full(c) =>
             val checkLimits = List(
-              underConsumerLimits(c.key.get, PER_MINUTE, c.perMinuteCallLimit.get),
-              underConsumerLimits(c.key.get, PER_HOUR, c.perHourCallLimit.get),
-              underConsumerLimits(c.key.get, PER_DAY, c.perDayCallLimit.get),
-              underConsumerLimits(c.key.get, PER_WEEK, c.perWeekCallLimit.get),
-              underConsumerLimits(c.key.get, PER_MONTH, c.perMonthCallLimit.get)
+              underConsumerLimits(c, PER_MINUTE),
+              underConsumerLimits(c, PER_HOUR),
+              underConsumerLimits(c, PER_DAY),
+              underConsumerLimits(c, PER_WEEK),
+              underConsumerLimits(c, PER_MONTH)
             )
             checkLimits match {
               case x1 :: x2 :: x3 :: x4 :: x5 :: Nil if x1 == false =>
@@ -2014,11 +2014,11 @@ Returns a string showed to the developer
                 (fullBoxOrException(Empty ~> APIFailureNewStyle(composeMsg(PER_MONTH, c.perMonthCallLimit.get), 429, exceededRateLimit(c, PER_MONTH))), x._2)
               case _ =>
                 val incrementCounters = List (
-                  incrementConsumerCounters(c.key.get, PER_MINUTE, c.perMinuteCallLimit.get),  // Responses other than the 429 status code MUST be stored by a cache.
-                  incrementConsumerCounters(c.key.get, PER_HOUR, c.perHourCallLimit.get),  // Responses other than the 429 status code MUST be stored by a cache.
-                  incrementConsumerCounters(c.key.get, PER_DAY, c.perDayCallLimit.get),  // Responses other than the 429 status code MUST be stored by a cache.
-                  incrementConsumerCounters(c.key.get, PER_WEEK, c.perWeekCallLimit.get),  // Responses other than the 429 status code MUST be stored by a cache.
-                  incrementConsumerCounters(c.key.get, PER_MONTH, c.perMonthCallLimit.get)  // Responses other than the 429 status code MUST be stored by a cache.
+                  incrementConsumerCounters(c, PER_MINUTE),  // Responses other than the 429 status code MUST be stored by a cache.
+                  incrementConsumerCounters(c, PER_HOUR),  // Responses other than the 429 status code MUST be stored by a cache.
+                  incrementConsumerCounters(c, PER_DAY),  // Responses other than the 429 status code MUST be stored by a cache.
+                  incrementConsumerCounters(c, PER_WEEK),  // Responses other than the 429 status code MUST be stored by a cache.
+                  incrementConsumerCounters(c, PER_MONTH)  // Responses other than the 429 status code MUST be stored by a cache.
                 )
                 incrementCounters match {
                   case x1 :: x2 :: x3 :: x4 :: x5 :: Nil if x1._1 > 0 => (x._1, setXRateLimits(c, x1))

@@ -1,6 +1,7 @@
 package code.api.util
 
-import code.api.util.LimitCallPeriod.LimitCallPeriod
+import code.api.util.LimitCallPeriod.{LimitCallPeriod, PER_DAY, PER_HOUR, PER_MINUTE, PER_MONTH, PER_WEEK, PER_YEAR}
+import code.model.Consumer
 import code.util.Helper.MdcLoggable
 import redis.clients.jedis.Jedis
 
@@ -51,6 +52,20 @@ object LimitCallsUtil extends MdcLoggable {
 
   private def createUniqueKey(consumerKey: String, period: LimitCallPeriod) = consumerKey + LimitCallPeriod.toString(period)
 
+  def underConsumerLimits(c: Consumer, period: LimitCallPeriod): Boolean = {
+    org.scalameta.logger.elem(c)
+    org.scalameta.logger.elem(period)
+    period match {
+      case PER_MINUTE if c.perMinuteCallLimit.get > 0 => underConsumerLimits(c.key.get, period, c.perMinuteCallLimit.get)
+      case PER_HOUR   if c.perHourCallLimit.get > 0   => underConsumerLimits(c.key.get, period, c.perHourCallLimit.get)
+      case PER_DAY    if c.perDayCallLimit.get > 0    => underConsumerLimits(c.key.get, period, c.perDayCallLimit.get)
+      case PER_WEEK   if c.perWeekCallLimit.get > 0   => underConsumerLimits(c.key.get, period, c.perWeekCallLimit.get)
+      case PER_MONTH  if c.perMonthCallLimit.get > 0  => underConsumerLimits(c.key.get, period, c.perMonthCallLimit.get)
+      case PER_YEAR                                   => true
+      case _                                          => true
+    }
+  }
+
   def underConsumerLimits(consumerKey: String, period: LimitCallPeriod, limit: Long): Boolean = {
     if (useConsumerLimits) {
       if (jedis.isConnected() == false) jedis.connect()
@@ -75,6 +90,18 @@ object LimitCallsUtil extends MdcLoggable {
       }
     } else {
       true // Rate Limiting disabled implies successful result
+    }
+  }
+
+  def incrementConsumerCounters(c: Consumer, period: LimitCallPeriod): (Long, Long) = {
+    period match {
+      case PER_MINUTE if c.perMinuteCallLimit.get > 0 => incrementConsumerCounters(c.key.get, period, c.perMinuteCallLimit.get)
+      case PER_HOUR   if c.perHourCallLimit.get > 0   => incrementConsumerCounters(c.key.get, period, c.perHourCallLimit.get)
+      case PER_DAY    if c.perDayCallLimit.get > 0    => incrementConsumerCounters(c.key.get, period, c.perDayCallLimit.get)
+      case PER_WEEK   if c.perWeekCallLimit.get > 0   => incrementConsumerCounters(c.key.get, period, c.perWeekCallLimit.get)
+      case PER_MONTH  if c.perMonthCallLimit.get > 0  => incrementConsumerCounters(c.key.get, period, c.perMonthCallLimit.get)
+      case PER_YEAR                                   => (-1, -1)
+      case _                                          => (-1, -1)
     }
   }
 

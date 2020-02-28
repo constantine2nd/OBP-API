@@ -3627,6 +3627,7 @@ object SwaggerDefinitionsJSON {
 
   val createAccountRequestJsonV310 = CreateAccountRequestJsonV310(
     user_id = userIdExample.value,
+    customer_id = None,
     label   = labelExample.value,
     product_code = accountTypeExample.value,
     balance =  amountOfMoneyJsonV121,

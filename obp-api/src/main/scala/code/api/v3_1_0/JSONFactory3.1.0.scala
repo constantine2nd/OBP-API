@@ -660,6 +660,7 @@ case class PhysicalCardsJsonV310(
 
 case class CreateAccountRequestJsonV310(
   user_id : String,
+  customer_id : Option[String],
   label   : String,
   product_code : String,
   balance : AmountOfMoneyJsonV121,

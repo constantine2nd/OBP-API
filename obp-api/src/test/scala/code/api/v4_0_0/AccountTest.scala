@@ -4,7 +4,7 @@ import com.openbankproject.commons.model.ErrorMessage
 import code.api.ResourceDocs1_4_0.SwaggerDefinitionsJSON
 import code.api.util.APIUtil.OAuth._
 import code.api.util.ApiRole
-import code.api.util.ErrorMessages.{UserHasMissingRoles, UserNotLoggedIn}
+import code.api.util.ErrorMessages.{CustomerNotFoundByCustomerId, InitialBalanceMustBeZero, UserHasMissingRoles, UserNotLoggedIn}
 import code.api.v3_1_0.CreateAccountResponseJsonV310
 import code.api.v4_0_0.OBPAPI4_0_0.Implementations4_0_0
 import code.entitlement.Entitlement
@@ -121,8 +121,25 @@ class AccountTest extends V400ServerSetup {
 
       Then("We grant the roles and test it again")
       Entitlement.entitlement.vend.addEntitlement(testBankId.value, resourceUser1.userId, ApiRole.canCreateAccount.toString)
-      val responseWithOtherUesr = makePostRequest(requestWithNewAccountId, write(addAccountJsonOtherUser))
 
+      Then("We set non zero balance")
+      val nonZeroBalance = addAccountJsonOtherUser.balance.copy(amount = "1")
+      val responseWithWrongBalance = makePostRequest(requestWithNewAccountId, write(addAccountJsonOtherUser.copy(balance = nonZeroBalance)))
+      Then("We should get a 400")
+      responseWithWrongBalance.code should equal(400)
+      And("error should be " + InitialBalanceMustBeZero)
+      responseWithWrongBalance.body.extract[ErrorMessage].message should equal (InitialBalanceMustBeZero)
+      
+      Then("We set a non existing customer")
+      val addAccountJsonNonExistingCustomer = addAccountJsonOtherUser.copy(customer_id = Some("Non existing value"))
+      val responseWithNonExistingCustomer = makePostRequest(requestWithNewAccountId, write(addAccountJsonNonExistingCustomer))
+      Then("We should get a 400")
+      responseWithNonExistingCustomer.code should equal(400)
+      And("error should be " + CustomerNotFoundByCustomerId)
+      responseWithNonExistingCustomer.body.extract[ErrorMessage].message should startWith (CustomerNotFoundByCustomerId)
+      
+      // All good
+      val responseWithOtherUesr = makePostRequest(requestWithNewAccountId, write(addAccountJsonOtherUser))
       val account2 = responseWithOtherUesr.body.extract[CreateAccountResponseJsonV310]
       account2.account_id should not be empty
       account2.product_code should be (addAccountJson.product_code)

@@ -198,7 +198,7 @@ class AccountTest extends V310ServerSetup with DefaultUsers {
   
 
   feature(s"test ${ApiEndpoint3.name}") {
-    scenario("We will test ${ApiEndpoint3.name}", ApiEndpoint3, VersionOfApi) {
+    scenario(s"We will test ${ApiEndpoint3.name}", ApiEndpoint3, VersionOfApi) {
       Given("The test bank and test accounts")
       val requestGet = (v3_1_0_Request / "banks" / testBankId.value / "balances").GET <@ (user1)
       

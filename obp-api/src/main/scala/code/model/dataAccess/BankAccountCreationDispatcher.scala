@@ -44,6 +44,7 @@ package com.tesobe.model {
 package code.model.dataAccess {
 
   import code.accountholders.AccountHolders
+  import code.accountholders.customer.{AccountHoldersByCustomer, AccountHoldersByCustomerDI}
   import code.api.Constant._
   import code.api.util.APIUtil
   import code.bankconnectors.Connector
@@ -88,6 +89,22 @@ package code.model.dataAccess {
     def setAsOwner(bankId : BankId, accountId : AccountId, user: User): Unit = {
       addPermissionToSystemOwnerView(bankId, accountId, user)
       val accountHolder = AccountHolders.accountHolders.vend.getOrCreateAccountHolder(user: User, BankIdAccountId(bankId, accountId))
+    }  
+    
+    /**
+      * 1 Create `Owner` view if the account do not have `Owner` view.
+      * 2 Add Permission to `Owner` view
+      * 3 Set the Customer as the account Holder.
+      * 
+      * @param bankId 
+      * @param accountId
+      * @param customer the user can be Login user or other users(Have the CanCreateAccount role)
+      *             
+      * @return This is a procedure, no return value. Just use the side effect.
+      */
+    def setCustomerAsOwner(bankId : BankId, accountId : AccountId, user: User, customer: Customer): Unit = {
+      addPermissionToSystemOwnerView(bankId, accountId, user)
+      val accountHolder = AccountHoldersByCustomerDI.accountHolders.vend.getOrCreateAccountHolder(customer, BankIdAccountId(bankId, accountId))
     }
     
     private def addPermissionToSystemOwnerView(bankId : BankId, accountId : AccountId, user: User): Unit = {

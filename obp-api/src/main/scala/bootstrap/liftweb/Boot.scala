@@ -33,6 +33,7 @@ import code.DynamicData.DynamicData
 import code.accountapplication.MappedAccountApplication
 import code.accountattribute.MappedAccountAttribute
 import code.accountholders.MapperAccountHolders
+import code.accountholders.customer.AccountHoldersByCustomer
 import code.actorsystem.ObpActorSystem
 import code.api.Constant._
 import code.api.ResourceDocs1_4_0.ResourceDocs300.{ResourceDocs310, ResourceDocs400}
@@ -664,7 +665,8 @@ object ToSchemify {
     MappedCustomerAttribute,
     MappedTransactionAttribute,
     MappedCardAttribute,
-    RateLimiting
+    RateLimiting,
+    AccountHoldersByCustomer
   )
 
   // The following tables are accessed directly via Mapper / JDBC

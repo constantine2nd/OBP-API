@@ -5391,6 +5391,13 @@ trait APIMethods310 {
             _ <- Helper.booleanToFuture(s"${UserHasMissingRoles} $canCreateAccount or create account for self") {
               hasEntitlement(bankId.value, loggedInUserId, canCreateAccount) || userIdAccountOwner == loggedInUserId
             }
+            (customer, callContext) <- createAccountJson.customer_id.isDefined match {
+              case true =>
+                NewStyle.function.getCustomerByCustomerId(createAccountJson.customer_id.get, callContext) map {
+                  c => (Some(c._1), c._2)
+                }
+              case false => Future(None, callContext)
+            }
             initialBalanceAsString = createAccountJson.balance.amount
             accountType = createAccountJson.product_code
             accountLabel = createAccountJson.label
@@ -5425,8 +5432,12 @@ trait APIMethods310 {
           } yield {
             //1 Create or Update the `Owner` for the new account
             //2 Add permission to the user
-            //3 Set the user as the account holder
-            BankAccountCreation.setAsOwner(bankId, accountId, postedOrLoggedInUser)
+            customer match {
+              //3 Set the customer as the account holder
+              case Some(owner) =>  BankAccountCreation.setCustomerAsOwner(bankId, accountId, postedOrLoggedInUser, owner)
+              //3 Set the user as the account holder
+              case None => BankAccountCreation.setAsOwner(bankId, accountId, postedOrLoggedInUser)
+            }
             (JSONFactory310.createAccountJSON(userIdAccountOwner, bankAccount, accountAttributes), HttpCode.`201`(callContext))
           }
         }

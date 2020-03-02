@@ -33,6 +33,7 @@ import code.metrics.APIMetrics
 import code.model._
 import code.model.dataAccess.{AuthUser, BankAccountCreation}
 import code.ratelimiting.RateLimitingDI
+import code.usercustomerlinks.UserCustomerLink
 import code.users.Users
 import code.util.Helper
 import code.views.Views
@@ -60,7 +61,6 @@ import com.openbankproject.commons.ExecutionContext.Implicits.global
 
 import scala.concurrent.Future
 import scala.util.Random
-
 import scala.reflect.runtime.universe.MethodSymbol
 
 trait APIMethods310 {
@@ -5397,6 +5397,20 @@ trait APIMethods310 {
                   c => (Some(c._1), c._2)
                 }
               case false => Future(None, callContext)
+            }
+            _ <- Helper.booleanToFuture(CustomerAlreadyLinkedToUser){
+              customer.isDefined match {
+                case true => UserCustomerLink.userCustomerLink.vend.getUserCustomerLinksByCustomerId(customer.get.customerId)
+                  .find(_.userId != postedOrLoggedInUser.userId).isDefined
+                case false => true
+              }
+            }
+            _ <- Helper.booleanToFuture(UserAlreadyLinkedToCustomer){
+              customer.isDefined match {
+                case true => UserCustomerLink.userCustomerLink.vend.getUserCustomerLinksByUserId(postedOrLoggedInUser.userId)
+                  .find(_.customerId != customer.get.customerId).isDefined
+                case false => true
+              }
             }
             initialBalanceAsString = createAccountJson.balance.amount
             accountType = createAccountJson.product_code

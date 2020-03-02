@@ -1,14 +1,11 @@
 package code.accountholders
 
-import code.model._
 import code.model.dataAccess.ResourceUser
-import code.users.Users
 import code.util.Helper.MdcLoggable
 import code.util.{AccountIdString, UUIDString}
 import com.openbankproject.commons.model.{AccountId, BankId, BankIdAccountId, User}
-import net.liftweb.common._
+import net.liftweb.common.{Box, _}
 import net.liftweb.mapper._
-import net.liftweb.common.Box
 
 
 /**

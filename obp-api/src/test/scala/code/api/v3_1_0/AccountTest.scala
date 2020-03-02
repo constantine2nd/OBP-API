@@ -15,6 +15,7 @@ import code.api.v3_1_0.OBPAPI3_1_0.Implementations3_1_0
 import code.api.v2_0_0.OBPAPI2_0_0.Implementations2_0_0
 import code.entitlement.Entitlement
 import code.setup.DefaultUsers
+import code.usercustomerlinks.UserCustomerLink
 import com.github.dwickern.macros.NameOf.nameOf
 import com.openbankproject.commons.model.AmountOfMoneyJsonV121
 import com.openbankproject.commons.util.ApiVersion

@@ -30,6 +30,7 @@ import code.transactionrequests.{MappedTransactionRequest, MappedTransactionRequ
 import code.transactionrequests.TransactionRequests.TransactionChallengeTypes._
 import code.transactionrequests.TransactionRequests.{TransactionRequestStatus, TransactionRequestTypes}
 import code.transactionrequests.TransactionRequests.TransactionRequestTypes.{apply => _, _}
+import code.usercustomerlinks.UserCustomerLink
 import code.users.Users
 import code.util.Helper
 import code.views.Views
@@ -1123,6 +1124,20 @@ trait APIMethods400 {
                   c => (Some(c._1), c._2)
                 }
               case false => Future(None, callContext)
+            }
+            _ <- Helper.booleanToFuture(CustomerAlreadyLinkedToUser){
+              customer.isDefined match {
+                case true => UserCustomerLink.userCustomerLink.vend.getUserCustomerLinksByCustomerId(customer.get.customerId)
+                  .find(_.userId != postedOrLoggedInUser.userId).isDefined
+                case false => true
+              }
+            }
+            _ <- Helper.booleanToFuture(UserAlreadyLinkedToCustomer){
+              customer.isDefined match {
+                case true => UserCustomerLink.userCustomerLink.vend.getUserCustomerLinksByUserId(postedOrLoggedInUser.userId)
+                  .find(_.customerId != customer.get.customerId).isDefined
+                case false => true
+              }
             }
             initialBalanceAsString = createAccountJson.balance.amount
             //Note: here we map the product_code to account_type 

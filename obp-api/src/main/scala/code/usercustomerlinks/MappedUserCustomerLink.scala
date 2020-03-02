@@ -23,6 +23,11 @@ object MappedUserCustomerLinkProvider extends UserCustomerLinkProvider {
     MappedUserCustomerLink.find(
       By(MappedUserCustomerLink.mCustomerId, customerId))
   }
+  
+  override def getUserCustomerLinksByCustomerId(customerId: String): List[UserCustomerLink] = {
+    MappedUserCustomerLink.findAll(
+      By(MappedUserCustomerLink.mCustomerId, customerId))
+  }
 
   override def getUserCustomerLinksByUserId(userId: String): List[UserCustomerLink] = {
     val userCustomerLinks : List[UserCustomerLink] = MappedUserCustomerLink.findAll(

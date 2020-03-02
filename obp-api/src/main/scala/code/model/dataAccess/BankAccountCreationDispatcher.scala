@@ -43,11 +43,14 @@ package com.tesobe.model {
 
 package code.model.dataAccess {
 
+  import java.util.Date
+
   import code.accountholders.AccountHolders
   import code.accountholders.customer.{AccountHoldersByCustomer, AccountHoldersByCustomerDI}
   import code.api.Constant._
   import code.api.util.APIUtil
   import code.bankconnectors.Connector
+  import code.usercustomerlinks.UserCustomerLink
   import code.users.Users
   import code.util.Helper.MdcLoggable
   import code.views.Views
@@ -104,7 +107,8 @@ package code.model.dataAccess {
       */
     def setCustomerAsOwner(bankId : BankId, accountId : AccountId, user: User, customer: Customer): Unit = {
       addPermissionToSystemOwnerView(bankId, accountId, user)
-      val accountHolder = AccountHoldersByCustomerDI.accountHolders.vend.getOrCreateAccountHolder(customer, BankIdAccountId(bankId, accountId))
+      UserCustomerLink.userCustomerLink.vend.createUserCustomerLink(user.userId, customer.customerId, new Date(), true)
+      AccountHoldersByCustomerDI.accountHolders.vend.getOrCreateAccountHolder(customer, BankIdAccountId(bankId, accountId))
     }
     
     private def addPermissionToSystemOwnerView(bankId : BankId, accountId : AccountId, user: User): Unit = {

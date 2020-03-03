@@ -107,7 +107,9 @@ package code.model.dataAccess {
       */
     def setCustomerAsOwner(bankId : BankId, accountId : AccountId, user: User, customer: Customer): Unit = {
       addPermissionToSystemOwnerView(bankId, accountId, user)
-      UserCustomerLink.userCustomerLink.vend.createUserCustomerLink(user.userId, customer.customerId, new Date(), true)
+      if(UserCustomerLink.userCustomerLink.vend.getUserCustomerLink(user.userId, customer.customerId).isEmpty) {
+        UserCustomerLink.userCustomerLink.vend.createUserCustomerLink(user.userId, customer.customerId, new Date(), true)
+      }
       AccountHoldersByCustomerDI.accountHolders.vend.getOrCreateAccountHolder(customer, BankIdAccountId(bankId, accountId))
     }
     

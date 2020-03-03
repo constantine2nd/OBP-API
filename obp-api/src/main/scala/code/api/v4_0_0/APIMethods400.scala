@@ -1127,15 +1127,17 @@ trait APIMethods400 {
             }
             _ <- Helper.booleanToFuture(CustomerAlreadyLinkedToUser){
               customer.isDefined match {
-                case true => UserCustomerLink.userCustomerLink.vend.getUserCustomerLinksByCustomerId(customer.get.customerId)
-                  .find(_.userId != postedOrLoggedInUser.userId).isDefined
+                case true => 
+                  UserCustomerLink.userCustomerLink.vend.getUserCustomerLinksByCustomerId(customer.get.customerId)
+                  .filterNot(_.userId == postedOrLoggedInUser.userId).size == 0
                 case false => true
               }
             }
             _ <- Helper.booleanToFuture(UserAlreadyLinkedToCustomer){
               customer.isDefined match {
-                case true => UserCustomerLink.userCustomerLink.vend.getUserCustomerLinksByUserId(postedOrLoggedInUser.userId)
-                  .find(_.customerId != customer.get.customerId).isDefined
+                case true => 
+                  UserCustomerLink.userCustomerLink.vend.getUserCustomerLinksByUserId(postedOrLoggedInUser.userId)
+                  .filterNot(_.customerId == customer.get.customerId).size == 0
                 case false => true
               }
             }

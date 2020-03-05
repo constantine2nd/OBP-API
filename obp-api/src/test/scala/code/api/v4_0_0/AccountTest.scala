@@ -28,7 +28,7 @@ class AccountTest extends V400ServerSetup {
   object VersionOfApi extends Tag(ApiVersion.v4_0_0.toString)
   object ApiEndpoint1 extends Tag(nameOf(Implementations4_0_0.getCoreAccountById))
   object ApiEndpoint2 extends Tag(nameOf(Implementations4_0_0.getPrivateAccountByIdFull))
-  object ApiEndpoint3 extends Tag(nameOf(Implementations4_0_0.addAccount))
+  object ApiEndpoint3 extends Tag(nameOf(Implementations4_0_0.createAccount))
 
   lazy val testBankId = testBankId1
   lazy val addAccountJsonUser1 = SwaggerDefinitionsJSON.createAccountRequestJsonV310.copy(user_id = resourceUser1.userId, balance = AmountOfMoneyJsonV121("EUR","0"))

@@ -1067,9 +1067,9 @@ trait APIMethods400 {
     }
 
     resourceDocs += ResourceDoc(
-      addAccount,
+      createAccount,
       implementedInApiVersion,
-      nameOf(addAccount),
+      nameOf(createAccount),
       "POST",
       "/banks/BANK_ID/accounts",
       "Create Account (POST)",
@@ -1103,7 +1103,7 @@ trait APIMethods400 {
     ).notAutoValidateRoles()  // this means disabled auto roles validation, will manually do the roles validation .
 
 
-    lazy val addAccount : OBPEndpoint = {
+    lazy val createAccount : OBPEndpoint = {
       // Create a new account
       case "banks" :: BankId(bankId) :: "accounts" :: Nil JsonPost json -> _ => {
         cc =>{

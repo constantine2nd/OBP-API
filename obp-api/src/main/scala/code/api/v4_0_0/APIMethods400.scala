@@ -32,7 +32,7 @@ import code.transactionrequests.TransactionRequests.{TransactionRequestStatus, T
 import code.transactionrequests.TransactionRequests.TransactionRequestTypes.{apply => _, _}
 import code.usercustomerlinks.UserCustomerLink
 import code.users.Users
-import code.util.Helper
+import code.util.{Helper, JsonUtils}
 import code.views.Views
 import com.github.dwickern.macros.NameOf.nameOf
 import com.openbankproject.commons.ExecutionContext.Implicits.global
@@ -41,6 +41,7 @@ import com.openbankproject.commons.model.enums.{CustomerAttributeType, DynamicEn
 import com.openbankproject.commons.model.enums.DynamicEntityOperation._
 import com.openbankproject.commons.util.ApiVersion
 import net.liftweb.common.{Box, Full, ParamFailure}
+import net.liftweb.http.Req
 import net.liftweb.http.rest.RestHelper
 import net.liftweb.json.Serialization.write
 import net.liftweb.json._
@@ -978,6 +979,23 @@ trait APIMethods400 {
 
       box.openOrThrowException("impossible error")
     }
+
+    //TODO temp solution to support query by field name and value
+    private def filterDynamicObjects(resultList: JArray, req: Req): JArray = {
+      req.params match {
+        case map if map.isEmpty => resultList
+        case params =>
+          val filteredWithFieldValue = resultList.arr.filter { jValue =>
+            params.forall { kv =>
+              val (path, values) = kv
+              values.exists(JsonUtils.isFieldEquals(jValue, path, _))
+            }
+          }
+
+          JArray(filteredWithFieldValue)
+      }
+    }
+
     lazy val genericEndpoint: OBPEndpoint = {
       case EntityName(entityName) :: Nil JsonGet req => { cc =>
         val listName = StringHelpers.snakify(English.plural(entityName))
@@ -986,7 +1004,8 @@ trait APIMethods400 {
           resultList: JArray = unboxResult(box.asInstanceOf[Box[JArray]])
         } yield {
           import net.liftweb.json.JsonDSL._
-          val jValue: JObject = listName -> resultList
+
+          val jValue: JObject = listName -> filterDynamicObjects(resultList, req)
           (jValue, HttpCode.`200`(Some(cc)))
         }
       }
@@ -1100,7 +1119,7 @@ trait APIMethods400 {
       Catalogs(notCore, notPSD2, notOBWG),
       List(apiTagAccount,apiTagOnboarding),
       Some(List(canCreateAccount))
-    ).notAutoValidateRoles()  // this means disabled auto roles validation, will manually do the roles validation .
+    ).disableAutoValidateRoles()  // this means disabled auto roles validation, will manually do the roles validation .
 
 
     lazy val createAccount : OBPEndpoint = {

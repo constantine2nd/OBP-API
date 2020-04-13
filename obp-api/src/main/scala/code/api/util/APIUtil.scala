@@ -39,6 +39,7 @@ import code.api.OAuthHandshake._
 import code.api.builder.OBP_APIBuilder
 import code.api.oauth1a.Arithmetics
 import code.api.oauth1a.OauthParams._
+import code.api.pemusage.MappedPemUsageProvider
 import code.api.sandbox.SandboxApiCalls
 import code.api.util.ApiTag.{ResourceDocTag, apiTagBank, apiTagNewStyle}
 import code.api.util.Glossary.GlossaryItem
@@ -2244,7 +2245,7 @@ Returns a string showed to the developer
     val correlationId = getCorrelationId()
     val reqHeaders = S.request.openOrThrowException(attemptedToOpenAnEmptyBox).request.headers
     val remoteIpAddress = getRemoteIpAddress()
-    val res =
+    val result =
     if (APIUtil.hasConsentJWT(reqHeaders)) {
       Consent.applyRules(APIUtil.getConsentJWT(reqHeaders), cc) 
     } else if (hasAnOAuthHeader(cc.authReqHeaderField)) {
@@ -2302,7 +2303,28 @@ Returns a string showed to the developer
     else {
       Future { (Empty, None) }
     }
-    
+
+
+    // Check the PEM from request headers is used with only one consumer
+    val resultWithPem =
+      getPropsAsBoolValue("check_pem_usage", true) match  {
+        case true => // Check is enabled.
+          for {
+            (user, cc) <- result
+            consumer = cc.flatMap(_.consumer)
+            consumerId = consumer.map(_.consumerId.get).getOrElse("")
+            userId = user.map(_.userId).getOrElse("")
+            pem = `getPSD2-CERT`(cc.map(_.requestHeaders).getOrElse(Nil))
+            checkPem <- MappedPemUsageProvider.checkPem(pem, consumerId, userId)
+          } yield {
+            checkPem match {
+              case false => (Failure(ErrorMessages.X509InvalidConsumer), cc)
+              case true => (user, cc)
+            }
+          }
+        case false => // Check is disabled. Just forward previous result.
+          result
+    }
     
 
     /******************************************************************************************************************
@@ -2316,7 +2338,7 @@ Returns a string showed to the developer
       }
     }
     val resultWithRateLimiting: Future[(Box[User], Option[CallContext])] = for {
-      (user, cc) <- res
+      (user, cc) <- resultWithPem
       consumer = cc.flatMap(_.consumer)
       rateLimiting <- getRateLimiting(consumer.map(_.consumerId.get).getOrElse(""))
     } yield {

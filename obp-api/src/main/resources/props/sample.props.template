@@ -792,3 +792,9 @@ dynamic_endpoints_url_prefix=dynamic
 # display_accept_cookies_question = false
 # More info at page https://wikis.ec.europa.eu/display/WEBGUIDE/04.+Cookies
 # --------------------------------------------------------------------------
+
+# --- PEM usage ----------------------------------------------------
+# Checks the PEM from request headers is used with only one consumer
+# In case is not defined default value is true
+# check_pem_usage = true
+# ------------------------------------------------------------------

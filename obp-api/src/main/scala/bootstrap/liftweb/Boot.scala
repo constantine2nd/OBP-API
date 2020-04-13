@@ -42,6 +42,7 @@ import code.api.ResourceDocs1_4_0._
 import code.api._
 import code.api.attributedefinition.AttributeDefinition
 import code.api.builder.APIBuilder_Connector
+import code.api.pemusage.PemUsage
 import code.api.util.APIUtil.{enableVersionIfAllowed, errorJsonResponse}
 import code.api.util._
 import code.api.util.migration.Migration
@@ -681,7 +682,8 @@ object ToSchemify {
     MappedCardAttribute,
     RateLimiting,
     MappedCustomerDependant,
-    AttributeDefinition
+    AttributeDefinition,
+    PemUsage
   )
 
   // The following tables are accessed directly via Mapper / JDBC

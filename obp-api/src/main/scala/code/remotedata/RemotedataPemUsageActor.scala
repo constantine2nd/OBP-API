@@ -3,14 +3,14 @@ package code.remotedata
 import akka.actor.Actor
 import akka.pattern.pipe
 import code.actorsystem.ObpActorHelper
-import code.api.pemusage.{MappedPemUsageProvider, RemotedatPemUsageCaseClasses}
+import code.api.pemusage.{MappedPemUsageProvider, RemotedataPemUsageCaseClasses}
 import code.util.Helper.MdcLoggable
 import com.openbankproject.commons.ExecutionContext.Implicits.global
 
 class RemotedataPemUsageActor extends Actor with ObpActorHelper with MdcLoggable {
 
   val mapper = MappedPemUsageProvider
-  val cc = RemotedatPemUsageCaseClasses
+  val cc = RemotedataPemUsageCaseClasses
 
   def receive: PartialFunction[Any, Unit] = {
         

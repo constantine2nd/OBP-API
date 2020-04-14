@@ -39,7 +39,7 @@ import code.api.OAuthHandshake._
 import code.api.builder.OBP_APIBuilder
 import code.api.oauth1a.Arithmetics
 import code.api.oauth1a.OauthParams._
-import code.api.pemusage.MappedPemUsageProvider
+import code.api.pemusage.PemUsageDI
 import code.api.sandbox.SandboxApiCalls
 import code.api.util.ApiTag.{ResourceDocTag, apiTagBank, apiTagNewStyle}
 import code.api.util.Glossary.GlossaryItem
@@ -61,9 +61,12 @@ import code.util.Helper
 import code.util.Helper.{MdcLoggable, SILENCE_IS_GOLDEN}
 import code.views.Views
 import com.github.dwickern.macros.NameOf.nameOf
+import com.openbankproject.commons.ExecutionContext.Implicits.global
 import com.openbankproject.commons.model.enums.StrongCustomerAuthentication.SCA
 import com.openbankproject.commons.model.enums.{PemCertificateRole, StrongCustomerAuthentication}
 import com.openbankproject.commons.model.{Customer, _}
+import com.openbankproject.commons.util.Functions.Implicits._
+import com.openbankproject.commons.util.{ApiVersion, ReflectUtils, ScannedApiVersion}
 import dispatch.url
 import net.liftweb.actor.LAFuture
 import net.liftweb.common.{Empty, _}
@@ -76,16 +79,12 @@ import net.liftweb.json.JsonAST.{JField, JValue}
 import net.liftweb.json.JsonParser.ParseException
 import net.liftweb.json._
 import net.liftweb.util.Helpers._
-import net.liftweb.util.{Helpers, LiftFlowOfControlException, Props, StringHelpers, ThreadGlobal}
+import net.liftweb.util._
+import org.apache.commons.lang3.StringUtils
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{List, Nil}
 import scala.collection.mutable.ArrayBuffer
-import com.openbankproject.commons.ExecutionContext.Implicits.global
-import com.openbankproject.commons.util.{ApiVersion, JsonAble, ReflectUtils, ScannedApiVersion}
-import com.openbankproject.commons.util.Functions.Implicits._
-import org.apache.commons.lang3.StringUtils
-
 import scala.concurrent.Future
 import scala.io.BufferedSource
 import scala.xml.{Elem, XML}
@@ -2315,11 +2314,17 @@ Returns a string showed to the developer
             consumerId = consumer.map(_.consumerId.get).getOrElse("")
             userId = user.map(_.userId).getOrElse("")
             pem = `getPSD2-CERT`(cc.map(_.requestHeaders).getOrElse(Nil))
-            checkPem <- MappedPemUsageProvider.checkPem(pem, consumerId, userId)
+            validatePem <- Future(X509.validate(pem))
+            checkPem <- PemUsageDI.pemUsage.vend.checkPem(pem, consumerId, userId)
           } yield {
-            checkPem match {
-              case false => (Failure(ErrorMessages.X509InvalidConsumer), cc)
-              case true => (user, cc)
+            validatePem match {
+              case failure@Failure(_, _, _) => 
+                (failure, cc)
+              case _ => 
+                checkPem match {
+                  case false => (Failure(ErrorMessages.X509InvalidConsumer), cc)
+                  case true => (user, cc)
+                }
             }
           }
         case false => // Check is disabled. Just forward previous result.

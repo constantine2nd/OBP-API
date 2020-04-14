@@ -2,14 +2,14 @@ package code.remotedata
 
 import akka.pattern.ask
 import code.actorsystem.ObpActorInit
-import code.api.pemusage.PemUsageProviderTrait
+import code.api.pemusage.{PemUsageProviderTrait, RemotedataPemUsageCaseClasses}
 
 import scala.concurrent.Future
 
 
 object RemotedataPemUsage extends ObpActorInit with PemUsageProviderTrait {
 
-  val cc = RemotedataPemUsage
+  val cc = RemotedataPemUsageCaseClasses
 
   override def checkPem(pem: Option[String], consumerId: String, userId: String): Future[Boolean] = {
     (actor ? cc.checkPem(pem, consumerId, userId)).mapTo[Boolean]

@@ -8,7 +8,7 @@ import java.io.ByteArrayInputStream
 import com.github.dwickern.macros.NameOf
 import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jose.util.X509CertUtils
-import net.liftweb.common.{Box, Failure, Full}
+import net.liftweb.common.{Box, Empty, Failure, Full}
 import org.bouncycastle.asn1.x509.Extension
 import org.bouncycastle.asn1.{ASN1Encodable, ASN1InputStream, ASN1ObjectIdentifier, ASN1Sequence, DEROctetString}
 import org.bouncycastle.asn1.x509.qualified.QCStatement
@@ -123,6 +123,13 @@ object X509 {
         case _: CertificateNotYetValidException =>
           Failure(ErrorMessages.X509CertificateNotYetValid)
       }
+    }
+  }
+
+  def validate(encodedCert: Option[String]): Box[Boolean] = {
+    encodedCert match {
+      case Some(pem) => validate(pem)
+      case None => Empty
     }
   }
 

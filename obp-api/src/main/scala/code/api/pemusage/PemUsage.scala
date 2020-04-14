@@ -31,4 +31,4 @@ class RemotedataPemUsageCaseClasses {
   case class checkPemSync(pem: Option[String], consumerId: String, userId:  String)
 }
 
-object RemotedatPemUsageCaseClasses extends RemotedataPemUsageCaseClasses
+object RemotedataPemUsageCaseClasses extends RemotedataPemUsageCaseClasses

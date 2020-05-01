@@ -81,9 +81,17 @@ class AuthUser extends MegaProtoUser[AuthUser] with MdcLoggable {
     */
   lazy val username: userName = new userName()
   class userName extends MappedString(this, 64) {
-    override def displayName = S.?("username")
+    def isEmpty(msg: => String)(value: String): List[FieldError] =
+      value match {
+        case null                  => List(FieldError(this, Text(msg))) // issue 179
+        case e if e.trim.isEmpty   => List(FieldError(this, Text(msg))) // issue 179
+        case _                     => Nil
+      }
+    override def displayName = S.?("Username")
     override def dbIndexed_? = true
-    override def validations = valUnique(S.?("unique.username")) _ :: super.validations
+    override def validations = isEmpty(Helper.i18n("username.must.be.set")) _ :: 
+                               valUnique(S.?("unique.username")) _ :: 
+                               super.validations
     override val fieldId = Some(Text("txtUsername"))
   }
 
@@ -234,7 +242,12 @@ class AuthUser extends MegaProtoUser[AuthUser] with MdcLoggable {
   override lazy val email = new MyEmail(this, 48) {
     override def validations = super.validations
     override def dbIndexed_? = false
-    override def validate = if (isEmailValid(i_is_!)) Nil else List(FieldError(this, Text(S.?("invalid.email.address"))))
+    override def validate = i_is_! match {
+      case null                  => List(FieldError(this, Text(Helper.i18n("email.must.be.set"))))
+      case e if e.trim.isEmpty   => List(FieldError(this, Text(Helper.i18n("email.must.be.set"))))
+      case e if isEmailValid(e)  => List(FieldError(this, Text(S.?("invalid.email.address"))))
+      case _                     => Nil
+    }
   }
 }
 
@@ -451,7 +464,7 @@ import net.liftweb.util.Helpers._
     <div id="signup">
       <form method="post" action={S.uri}>
           <h1>{signupFormTitle}</h1>
-          <div id="signup-error" class="alert alert-danger hide"><span data-lift="Msg?id=error"/></div>
+          <div id="signup-general-error" class="alert alert-danger hide"><span data-lift="Msg?id=error"/></div>
           {localForm(user, false, signupFields)}
           {agreeTermsDiv}
           {agreePrivacyPolicy}
@@ -469,7 +482,14 @@ import net.liftweb.util.Helpers._
       field <- computeFieldFromPointer(user, pointer).toList
       if field.show_? && (!ignorePassword || !pointer.isPasswordField_?)
       form <- field.toForm.toList
-    } yield <div class="form-group"><label>{field.displayName}</label> {form}</div>
+    } yield {
+      <div class="form-group">
+        <label>{field.displayName}</label>
+        {form}
+        <div id="signup-error" class="alert alert-danger hide"><span data-lift={s"Msg?id=${field.uniqueFieldId.getOrElse("")}&errorClass=error"}/></div>
+      </div>
+    }
+      
   }
 
   def userLoginFailed = {
@@ -961,7 +981,9 @@ def restoreSomeSessions(): Unit = {
           }
 
         case xs =>
-          xs.foreach(e => S.error("error", e.msg))
+          xs.foreach{
+            e => S.error(e.field.uniqueFieldId.openOrThrowException("There is no uniqueFieldId."), e.msg)
+          }
           signupFunc(Full(innerSignup _))
       }
     }

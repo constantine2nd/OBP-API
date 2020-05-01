@@ -34,8 +34,8 @@ $(document).ready(function() {
 		if (agreeTerms.length > 0) {
 			if (!agreeTerms.prop('checked')) {
 				var msg = 'Please agree to the Terms & Conditions';
-				$('#signup #signup-error #error').html(msg);
-				$('#signup #signup-error').removeClass('hide');
+				$('#signup #signup-general-error #error').html(msg);
+				$('#signup #signup-general-error').removeClass('hide');
 				return false;
 			}
 		}
@@ -48,8 +48,8 @@ $(document).ready(function() {
 		if (agreePrivacyPolicy.length > 0) {
 			if (!agreePrivacyPolicy.prop('checked')) {
 				var msg = 'Please agree to the Privacy Policy';
-				$('#signup #signup-error #error').html(msg);
-				$('#signup #signup-error').removeClass('hide');
+				$('#signup #signup-general-error #error').html(msg);
+				$('#signup #signup-general-error').removeClass('hide');
 				return false;
 			}
 		}
@@ -57,7 +57,23 @@ $(document).ready(function() {
 	});
 
 	// Show sign up errors - FIXME: Change backend to (not) show errors
-	var signupError = $('#signup #signup-error #error');
+	var signupError = $('#signup #signup-error #authuser_firstName');
+	if (signupError.length > 0 && signupError.html().length > 0) {
+		signupError.parent().removeClass('hide');
+	}
+	var signupError = $('#signup #signup-error #authuser_lastName');
+	if (signupError.length > 0 && signupError.html().length > 0) {
+		signupError.parent().removeClass('hide');
+	}
+	var signupError = $('#signup #signup-error #authuser_email');
+	if (signupError.length > 0 && signupError.html().length > 0) {
+		signupError.parent().removeClass('hide');
+	}
+	var signupError = $('#signup #signup-error #authuser_username');
+	if (signupError.length > 0 && signupError.html().length > 0) {
+		signupError.parent().removeClass('hide');
+	}
+	var signupError = $('#signup #signup-error #authuser_password');
 	if (signupError.length > 0 && signupError.html().length > 0) {
 		signupError.parent().removeClass('hide');
 	}

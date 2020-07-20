@@ -293,6 +293,9 @@ case class UserLockStatusJson(
                              )
 
 case class DatabaseInfoJson(product_name: String, product_version: String)
+
+case class LogoutLinkJson(link: String)
+
 object JSONFactory400 {
   def createBankJSON400(bank: Bank): BankJson400 = {
     val obp = BankRoutingJsonV121("OBP", bank.bankId.value)

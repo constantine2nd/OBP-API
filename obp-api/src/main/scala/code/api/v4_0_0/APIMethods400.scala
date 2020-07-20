@@ -62,6 +62,7 @@ import net.liftweb.mapper.By
 import net.liftweb.util.Helpers.now
 import net.liftweb.util.{Helpers, StringHelpers}
 import org.apache.commons.lang3.StringUtils
+import org.apache.kafka.common.security.authenticator.Login
 
 import scala.collection.immutable.{List, Nil}
 import scala.collection.mutable.ArrayBuffer
@@ -112,6 +113,38 @@ trait APIMethods400 {
           } yield {
             (Migration.DbFunction.mapperDatabaseInfo(), HttpCode.`200`(callContext))
           }
+      }
+    }
+
+
+    staticResourceDocs += ResourceDoc(
+      getLogoutLink,
+      implementedInApiVersion,
+      nameOf(getLogoutLink), // TODO can we get this string from the val two lines above?
+      "GET",
+      "/users/current/logout-link",
+      "Get Logout Link",
+      s"""Get the Logout Link
+         |
+         |${authenticationRequiredMessage(true)}
+      """.stripMargin,
+      emptyObjectJson,
+      logoutLinkV400,
+      List(UserNotLoggedIn, UnknownError),
+      Catalogs(Core, notPSD2, notOBWG),
+      List(apiTagUser, apiTagNewStyle))
+
+    lazy val getLogoutLink: OBPEndpoint = {
+      case "users" :: "current" :: "logout-link" :: Nil JsonGet _ => {
+        cc => {
+          for {
+            (Full(_), callContext) <- authenticatedAccess(cc)
+          } yield {
+            val link = code.api.Constant.HostName + AuthUser.logoutPath.foldLeft("")(_ + "/" + _)
+            val logoutLink = LogoutLinkJson(link)
+            (logoutLink, HttpCode.`200`(callContext))
+          }
+        }
       }
     }
 

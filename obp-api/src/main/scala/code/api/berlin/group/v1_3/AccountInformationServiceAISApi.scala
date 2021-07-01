@@ -63,10 +63,14 @@ object APIMethods_AccountInformationServiceAISApi extends RestHelper {
 
 
     private def checkAccountAccess(viewId: ViewId, u: User, account: BankAccount, callContext: Option[CallContext]) = {
+      val errorMsg = viewId match {
+        case ViewId(SYSTEM_READ_BALANCES_BERLIN_GROUP_VIEW_ID) => NoViewReadBalancesBerlinGroup
+        case _ => NoViewReadAccountsBerlinGroup
+      }
       Future {
         Helper.booleanToBox(u.hasViewAccess(BankIdAccountId(account.bankId, account.accountId), viewId))
       } map {
-        unboxFullOrFail(_, callContext, NoViewReadAccountsBerlinGroup + " userId : " + u.userId + ". account : " + account.accountId, 403)
+        unboxFullOrFail(_, callContext, errorMsg + " userId : " + u.userId + ". account : " + account.accountId, 403)
       }
     }
             

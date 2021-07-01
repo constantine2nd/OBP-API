@@ -176,6 +176,7 @@ object ErrorMessages {
   val NoAccountAccessOnView = "OBP-20061: Current user does not have access to the view "
   val FrequencyPerDayError = "OBP-20062: Frequency per day must be greater than 0."
   val FrequencyPerDayMustBeOneError = "OBP-20063: Frequency per day must be equal to 1 in case of one-off access."
+  val NoViewReadBalancesBerlinGroup = s"OBP-20064: User does not have access to the view $SYSTEM_READ_BALANCES_BERLIN_GROUP_VIEW_ID."
 
 
   val UserNotSuperAdminOrMissRole = "OBP-20101: Current User is not super admin or is missing entitlements: "

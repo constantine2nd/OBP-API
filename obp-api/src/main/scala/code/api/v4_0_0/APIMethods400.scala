@@ -2564,6 +2564,113 @@ trait APIMethods400 {
         }
       }
     }
+    
+    
+    staticResourceDocs += ResourceDoc(
+      createAccountAtBank,
+      implementedInApiVersion,
+      nameOf(createAccountAtBank),
+      "POST",
+      "/my/BANK_ID/accounts",
+      "Create Account (POST)",
+      """Create Account at bank specified by BANK_ID.
+        |
+        |The User can create an Account for himself  - or -  the User that has the USER_ID specified in the POST body.
+        |
+        |If the POST body USER_ID *is* specified, the logged in user must have the Role CanCreateAccount. Once created, the Account will be owned by the User specified by USER_ID.
+        |
+        |If the POST body USER_ID is *not* specified, the account will be owned by the logged in User.
+        |
+        |The 'product_code' field SHOULD be a product_code from Product.
+        |If the product_code matches a product_code from Product, account attributes will be created that match the Product Attributes.
+        |
+        |Note: The Amount MUST be zero.""".stripMargin,
+      createAccountRequestJsonV310,
+      createAccountResponseJsonV310,
+      List(
+        InvalidJsonFormat,
+        $UserNotLoggedIn,
+        UserHasMissingRoles,
+        InvalidAccountBalanceAmount,
+        InvalidAccountInitialBalance,
+        InitialBalanceMustBeZero,
+        InvalidAccountBalanceCurrency,
+        UnknownError
+      ),
+      List(apiTagAccount, apiTagNewStyle),
+      Some(List(canCreateAccountAtBank))
+    ).disableAutoValidateRoles()  // this means disabled auto roles validation, will manually do the roles validation .
+
+
+    lazy val createAccountAtBank : OBPEndpoint = {
+      // Create a new account
+      case "my" :: BankId(bankId) :: "accounts" :: Nil JsonPost json -> _ => {
+        cc =>{
+          val failMsg = s"$InvalidJsonFormat The Json body should be the ${prettyRender(Extraction.decompose(createAccountRequestJsonV310))} "
+          for {
+            createAccountJson <- NewStyle.function.tryons(failMsg, 400, cc.callContext) {
+              json.extract[CreateAccountRequestJsonV310]
+            }
+            loggedInUserId = cc.userId
+            userIdAccountOwner = if (createAccountJson.user_id.nonEmpty) createAccountJson.user_id else loggedInUserId
+            (postedOrLoggedInUser,callContext) <- NewStyle.function.findByUserId(userIdAccountOwner, cc.callContext)
+
+            _ <- if (userIdAccountOwner == loggedInUserId) Future.successful(Full(Unit))
+              else NewStyle.function.hasEntitlement(bankId.value, loggedInUserId, canCreateAccountAtBank, callContext, s"${UserHasMissingRoles} $canCreateAccountAtBank or create account for self")
+
+            initialBalanceAsString = createAccountJson.balance.amount
+            //Note: here we map the product_code to account_type
+            accountType = createAccountJson.product_code
+            accountLabel = createAccountJson.label
+            initialBalanceAsNumber <- NewStyle.function.tryons(InvalidAccountInitialBalance, 400, callContext) {
+              BigDecimal(initialBalanceAsString)
+            }
+            _ <-  Helper.booleanToFuture(InitialBalanceMustBeZero, cc=callContext){0 == initialBalanceAsNumber}
+            _ <-  Helper.booleanToFuture(InvalidISOCurrencyCode, cc=callContext){isValidCurrencyISOCode(createAccountJson.balance.currency)}
+            currency = createAccountJson.balance.currency
+            (_, callContext ) <- NewStyle.function.getBank(bankId, callContext)
+            _ <- Helper.booleanToFuture(s"$InvalidAccountRoutings Duplication detected in account routings, please specify only one value per routing scheme", cc=callContext) {
+              createAccountJson.account_routings.map(_.scheme).distinct.size == createAccountJson.account_routings.size
+            }
+            alreadyExistAccountRoutings <- Future.sequence(createAccountJson.account_routings.map(accountRouting =>
+              NewStyle.function.getAccountRouting(Some(bankId), accountRouting.scheme, accountRouting.address, callContext).map(_ => Some(accountRouting)).fallbackTo(Future.successful(None))
+              ))
+            alreadyExistingAccountRouting = alreadyExistAccountRoutings.collect {
+              case Some(accountRouting) => s"bankId: $bankId, scheme: ${accountRouting.scheme}, address: ${accountRouting.address}"
+            }
+            _ <- Helper.booleanToFuture(s"$AccountRoutingAlreadyExist (${alreadyExistingAccountRouting.mkString("; ")})", cc=callContext) {
+              alreadyExistingAccountRouting.isEmpty
+            }
+            (bankAccount,callContext) <- NewStyle.function.addBankAccount(
+              bankId,
+              accountType,
+              accountLabel,
+              currency,
+              initialBalanceAsNumber,
+              postedOrLoggedInUser.name,
+              createAccountJson.branch_id,
+              createAccountJson.account_routings.map(r => AccountRouting(r.scheme, r.address)),
+              callContext
+            )
+            accountId = bankAccount.accountId
+            (productAttributes, callContext) <- NewStyle.function.getProductAttributesByBankAndCode(bankId, ProductCode(accountType), callContext)
+            (accountAttributes, callContext) <- NewStyle.function.createAccountAttributes(
+              bankId,
+              accountId,
+              ProductCode(accountType),
+              productAttributes,
+              callContext: Option[CallContext]
+            )
+          } yield {
+            //1 Create or Update the `Owner` for the new account
+            //2 Add permission to the user
+            //3 Set the user as the account holder
+            BankAccountCreation.setAsOwner(bankId, accountId, postedOrLoggedInUser)
+            (JSONFactory310.createAccountJSON(userIdAccountOwner, bankAccount, accountAttributes), HttpCode.`201`(callContext))
+          }
+        }
+      }
+    }
 
 
 

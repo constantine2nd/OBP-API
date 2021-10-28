@@ -824,6 +824,9 @@ object ApiRole {
   case class CanCreateHistoricalTransactionAtBank(requiresBankId: Boolean = true) extends ApiRole
   lazy val canCreateHistoricalTransactionAtBank = canCreateHistoricalTransactionAtBank()
   
+  case class CanCreateAccountAtBank(requiresBankId: Boolean = true) extends ApiRole
+  lazy val canCreateAccountAtBank = CanCreateAccountAtBank()
+  
   private val dynamicApiRoles = new ConcurrentHashMap[String, ApiRole]
 
   private case class DynamicApiRole(role: String, requiresBankId: Boolean = false) extends ApiRole{

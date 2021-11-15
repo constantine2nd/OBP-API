@@ -67,8 +67,8 @@ object HydraUtil extends MdcLoggable{
    */
   def createHydraClient(consumer: Consumer, fun: OAuth2Client => OAuth2Client = identity): Option[OAuth2Client] = {
     logger.info("createHydraClient process is starting")
-    val redirectUrl = consumer.redirectURL.get
-    if (StringUtils.isBlank(redirectUrl) || redirectURLRegex.findFirstIn(redirectUrl).isEmpty) {
+    val redirectUrls = consumer.redirectURL.get.split(",").toList
+    if (redirectUrls.isEmpty || redirectUrls.exists(redirectURLRegex.findFirstIn(_).isEmpty)) {
       return None
     }
     val oAuth2Client = new OAuth2Client()
@@ -79,9 +79,9 @@ object HydraUtil extends MdcLoggable{
 
     oAuth2Client.setGrantTypes(grantTypes)
     oAuth2Client.setResponseTypes(("code" :: "id_token" :: "token" :: "code id_token" :: Nil).asJava)
-    oAuth2Client.setPostLogoutRedirectUris(List(redirectUrl).asJava)
+    oAuth2Client.setPostLogoutRedirectUris(redirectUrls.asJava)
 
-    oAuth2Client.setRedirectUris(List(redirectUrl).asJava)
+    oAuth2Client.setRedirectUris(redirectUrls.asJava)
     // if set client certificate supplied, set it to client meta.
     if(consumer.clientCertificate != null && StringUtils.isNotBlank(consumer.clientCertificate.get)) {
       val clientMeta = Map("client_certificate" -> consumer.clientCertificate.get).asJava

@@ -56,19 +56,19 @@ class OAuthWorkedThanks extends MdcLoggable {
     
     // 1st, find token --> 2rd, find consumer -->3rd ,find the RedirectUrl.
     val consumer = Tokens.tokens.vend.getTokenByKey(requestedOauthToken).map(_.consumer).flatten
-    val validRedirectURL= consumer.map(_.redirectURL.get).getOrElse("invalidRedirectURL")
+    val validRedirectURLs: List[String] = consumer.map(_.redirectURL.get.split(",").toList).getOrElse(Nil)
     val appName = consumer.map(_.name.get).getOrElse("Default_App")
-    logger.debug(s"OAuthWorkedThanks.thanks.validRedirectURL $validRedirectURL")
+    logger.debug(s"OAuthWorkedThanks.thanks.validRedirectURLs $validRedirectURLs")
     
     redirectUrl match {
       case Full(url) =>
         //this redirect url is checked by following, no open redirect issue.
-        // TODO maybe handle case of extra trailing / on the url ?
+        // TODO maybe handle case of extra trailing / on the url ?ž
 
-        val incorrectRedirectUrlMessage =  s"The validRedirectURL is $validRedirectURL but the requestedRedirectURL was $requestedRedirectURL"
+        val incorrectRedirectUrlMessage =  s"The validRedirectURLs are ${validRedirectURLs.mkString(",")} but the requestedRedirectURL was $requestedRedirectURL"
 
 
-        if(validRedirectURL.equals(requestedRedirectURL)) {
+        if(validRedirectURLs.exists(_ == requestedRedirectURL)) {
           "#redirect-link [href]" #> url &
           ".app-name"#> appName //there may be several places to be modified in html, so here use the class, not the id.
         }else{

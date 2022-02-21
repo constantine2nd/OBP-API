@@ -1400,7 +1400,7 @@ trait KafkaMappedConnector_vMar2017 extends Connector with KafkaHelper with MdcL
         data.setAccountId(accountId)
         data.setBankId(bankId)
         data.setLabel(label)
-        data.save()
+        data.save
         true
       case _ =>
         logger.info(s"account data with id $accountId at bank with id $bankId already exists. No need to create a new one.")
@@ -1536,7 +1536,7 @@ trait KafkaMappedConnector_vMar2017 extends Connector with KafkaHelper with MdcL
       d <- MappedBankAccountData.find(By(MappedBankAccountData.accountId, accountId.value), By(MappedBankAccountData.bankId, bank.bankId.value))
     } yield {
       d.setLabel(label)
-      d.save()
+      d.save
     }
     Full(result.getOrElse(false))
   }

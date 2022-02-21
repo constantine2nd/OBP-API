@@ -33,7 +33,7 @@ object LoginAttempt extends MdcLoggable {
           .mUsername(username)
           .mLastFailureDate(now)
           .mBadAttemptsSinceLastSuccessOrReset(1) // Start with 1
-          .save()
+          .save
 
         logger.debug(s"incrementBadLoginAttempts created loginAttempt")
 

@@ -81,7 +81,6 @@ object Connector extends SimpleInjector {
   val nameToConnector: Map[String, () => Connector] = Map(
     "mapped" -> lazyValue(LocalMappedConnector),
     "akka_vDec2018" -> lazyValue(AkkaConnector_vDec2018),
-    "mongodb" -> lazyValue(LocalRecordConnector),
     "obpjvm" -> lazyValue(ObpJvmMappedConnector),
     "kafka" -> lazyValue(KafkaMappedConnector),
     "kafka_JVMcompatible" -> lazyValue(KafkaMappedConnector_JVMcompatible),

@@ -983,7 +983,7 @@ object KafkaMappedConnector_JVMcompatible extends Connector with KafkaHelper wit
         data.setAccountId(accountId)
         data.setBankId(bankId)
         data.setLabel(label)
-        data.save()
+        data.save
         true
       case _ =>
         logger.debug(s"account data with id $accountId at bank with id $bankId already exists. No need to create a new one.")
@@ -1122,7 +1122,7 @@ object KafkaMappedConnector_JVMcompatible extends Connector with KafkaHelper wit
       d <- MappedBankAccountData.find(By(MappedBankAccountData.accountId, accountId.value), By(MappedBankAccountData.bankId, bank.bankId.value))
     } yield {
       d.setLabel(label)
-      d.save()
+      d.save
     }
     Full(result.getOrElse(false))
   }

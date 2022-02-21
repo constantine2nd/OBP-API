@@ -1,5 +1,6 @@
 package code.metadata.wheretags
 
+import code.api.util.CustomJsonFormats
 import net.liftweb.mongodb.BsonDSL._
 import net.liftweb.mongodb.record.{MongoMetaRecord, MongoRecord}
 import net.liftweb.mongodb.record.field.{DateField, ObjectIdPk}
@@ -7,6 +8,7 @@ import net.liftweb.record.field.{DoubleField, LongField, StringField}
 import code.model._
 import com.mongodb.{DBObject, QueryBuilder}
 import com.openbankproject.commons.model._
+import net.liftweb.json.JObject
 
 private class OBPWhereTag private() extends MongoRecord[OBPWhereTag] with ObjectIdPk[OBPWhereTag] with GeoTag {
   def meta = OBPWhereTag
@@ -37,7 +39,8 @@ private object OBPWhereTag extends OBPWhereTag with MongoMetaRecord[OBPWhereTag]
 
   def find(bankId : BankId, accountId : AccountId, transactionId : TransactionId, viewId : ViewId) : Option[OBPWhereTag] = {
     val query = getFindQuery(bankId, accountId, transactionId, viewId)
-    find(query)
+    val jObject = net.liftweb.mongodb.BsonParser.serialize(query).asInstanceOf[JObject]
+    find(jObject)
   }
 
   //in theory commentId should be enough as we're just using the mongoId

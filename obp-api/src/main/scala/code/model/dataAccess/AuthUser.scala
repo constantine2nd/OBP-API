@@ -365,7 +365,7 @@ class AuthUser extends MegaProtoUser[AuthUser] with CreatedUpdated with MdcLogga
         }
       }
     }
-    super.save()
+    super.save
   }
 
   override def delete_!(): Boolean = {

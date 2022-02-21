@@ -333,10 +333,6 @@ class Boot extends MdcLoggable {
     if(connector != "mongodb")
       schemifyAll()
 
-    // This sets up MongoDB config (for the mongodb connector)
-    if( connector == "mongodb")
-      MongoConfig.init
-
     val runningMode = Props.mode match {
       case Props.RunModes.Production => "Production mode"
       case Props.RunModes.Staging => "Staging mode"

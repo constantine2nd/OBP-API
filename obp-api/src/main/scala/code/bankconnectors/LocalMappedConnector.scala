@@ -1564,7 +1564,7 @@ object LocalMappedConnector extends Connector with MdcLoggable {
         newAccountBalance <- Full(Helper.convertToSmallestCurrencyUnits(fromAccount.balance, currency) + Helper.convertToSmallestCurrencyUnits(amount, currency))
 
         //Here is the `LocalMappedConnector`, once get this point, fromAccount must be a mappedBankAccount. So can use asInstanceOf.... 
-        _ <- tryo(fromAccount.asInstanceOf[MappedBankAccount].accountBalance(newAccountBalance).save()) ?~! UpdateBankAccountException
+        _ <- tryo(fromAccount.asInstanceOf[MappedBankAccount].accountBalance(newAccountBalance).save) ?~! UpdateBankAccountException
 
         mappedTransaction <- tryo(MappedTransaction.create
           .bank(fromAccount.bankId.value)
@@ -1719,7 +1719,7 @@ object LocalMappedConnector extends Connector with MdcLoggable {
       newAccountBalance <- Full(Helper.convertToSmallestCurrencyUnits(fromAccount.balance, currency) + Helper.convertToSmallestCurrencyUnits(amount, currency))
 
       //Here is the `LocalMappedConnector`, once get this point, fromAccount must be a mappedBankAccount. So can use asInstanceOf.... 
-      _ <- tryo(fromAccount.asInstanceOf[MappedBankAccount].accountBalance(newAccountBalance).save()) ?~! UpdateBankAccountException
+      _ <- tryo(fromAccount.asInstanceOf[MappedBankAccount].accountBalance(newAccountBalance).save) ?~! UpdateBankAccountException
 
       mappedTransaction <- tryo(MappedTransaction.create
         //No matter which type (SANDBOX_TAN,SEPA,FREE_FORM,COUNTERPARTYE), always filled the following nine fields.
@@ -4768,7 +4768,7 @@ object LocalMappedConnector extends Connector with MdcLoggable {
         .Currency(reason.currency.getOrElse(""))
         .DocumentNumber(reason.documentNumber.getOrElse(""))
         .Description(reason.description.getOrElse(""))
-        .save()
+        .save
     }
   }
 

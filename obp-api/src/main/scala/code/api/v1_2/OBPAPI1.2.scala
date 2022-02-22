@@ -36,7 +36,6 @@
 //import net.liftweb.json.Extraction
 //import net.liftweb.json.JsonAST._
 //import net.liftweb.common.{Box, Empty, Failure, Full}
-//import net.liftweb.mongodb._
 //import _root_.java.math.MathContext
 //
 //import _root_.net.liftweb.util._
@@ -44,8 +43,6 @@
 //
 //import _root_.scala.xml._
 //import _root_.net.liftweb.http.S._
-//import net.liftweb.mongodb.Skip
-//import com.mongodb._
 //import code.bankconnectors.{OBPFromDate, OBPLimit, OBPOffset, OBPOrder, OBPOrdering, OBPQueryParam, OBPToDate}
 //import code.model._
 //import java.net.URL

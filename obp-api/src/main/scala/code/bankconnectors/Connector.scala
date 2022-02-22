@@ -65,7 +65,6 @@ import scala.util.Random
 /*
 So we can switch between different sources of resources e.g.
 - Mapper ORM for connecting to RDBMS (via JDBC) https://www.assembla.com/wiki/show/liftweb/Mapper
-- MongoDB
 - KafkaMQ
 etc.
 

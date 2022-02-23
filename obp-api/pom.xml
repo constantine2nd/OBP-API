@@ -314,7 +314,7 @@
     <dependency>
       <groupId>com.github.dwickern</groupId>
       <artifactId>scala-nameof_${scala.version}</artifactId>
-      <version>1.0.3</version>
+      <version>4.0.0</version>
     </dependency>
     <dependency>
       <groupId>com.nimbusds</groupId>

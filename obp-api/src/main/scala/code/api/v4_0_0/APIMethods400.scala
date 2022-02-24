@@ -3,6 +3,7 @@ package code.api.v4_0_0
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.{Calendar, Date}
+
 import code.DynamicData.{DynamicData, DynamicDataProvider}
 import code.DynamicEndpoint.DynamicEndpointSwagger
 import code.accountattribute.AccountAttributeX
@@ -24,7 +25,7 @@ import code.api.v1_2_1.{JSONFactory, PostTransactionTagJSON}
 import code.api.v1_4_0.JSONFactory1_4_0
 import code.api.v1_4_0.JSONFactory1_4_0.TransactionRequestAccountJsonV140
 import code.api.v2_0_0.OBPAPI2_0_0.Implementations2_0_0
-import code.api.v2_0_0.{CreateEntitlementJSON, EntitlementJSONs, JSONFactory200}
+import code.api.v2_0_0.{CreateEntitlementJSON, CreateUserCustomerLinkJson, EntitlementJSONs, JSONFactory200}
 import code.api.v2_1_0._
 import code.api.v3_0_0.JSONFactory300
 import code.api.v3_1_0._
@@ -56,9 +57,10 @@ import code.transactionrequests.MappedTransactionRequestProvider
 import code.transactionrequests.TransactionRequests.TransactionChallengeTypes._
 import code.transactionrequests.TransactionRequests.TransactionRequestTypes
 import code.transactionrequests.TransactionRequests.TransactionRequestTypes.{apply => _, _}
+import code.usercustomerlinks.UserCustomerLink
 import code.userlocks.UserLocksProvider
 import code.users.Users
-import code.util.Helper.booleanToFuture
+import code.util.Helper.{booleanToBox, booleanToFuture}
 import code.util.{Helper, JsonSchemaUtil}
 import code.validation.JsonValidation
 import code.views.Views
@@ -7222,6 +7224,69 @@ trait APIMethods400 {
           }
       }
     }
+    
+    staticResourceDocs += ResourceDoc(
+      createUserCustomerLinks,
+      implementedInApiVersion,
+      "createUserCustomerLinks",
+      "POST",
+      "/banks/BANK_ID/user_customer_links",
+      "Create User Customer Link",
+      s"""Link a User to a Customer
+         |
+         |${authenticationRequiredMessage(true)}
+         |
+         |""",
+      createUserCustomerLinkJson,
+      userCustomerLinkJson,
+      List(
+        $UserNotLoggedIn,
+        InvalidBankIdFormat,
+        $BankNotFound,
+        InvalidJsonFormat,
+        CustomerNotFoundByCustomerId,
+        UserHasMissingRoles,
+        CustomerAlreadyExistsForUser,
+        CreateUserCustomerLinksError,
+        UnknownError
+      ),
+      List(apiTagCustomer, apiTagUser),
+      Some(List(canCreateUserCustomerLink,canCreateUserCustomerLinkAtAnyBank)))
+
+    lazy val createUserCustomerLinks : OBPEndpoint = {
+      case "banks" :: BankId(bankId):: "user_customer_links" :: Nil JsonPost json -> _ => {
+        cc =>
+          for {
+            _ <- NewStyle.function.tryons(s"$InvalidBankIdFormat", 400, cc.callContext) {
+              assert(isValidID(bankId.value))
+            }
+            postedData <- NewStyle.function.tryons(s"$InvalidJsonFormat The Json body should be the $CreateUserCustomerLinkJson ", 400, cc.callContext) {
+              json.extract[CreateUserCustomerLinkJson]
+            }
+            user <- Users.users.vend.getUserByUserIdFuture(postedData.user_id) map {
+              x => unboxFullOrFail(x, cc.callContext, UserNotFoundByUsername, 404)
+            }
+            _ <- booleanToFuture("Field customer_id is not defined in the posted json!", 400, cc.callContext) {
+              postedData.customer_id.nonEmpty
+            }
+            (customer, callContext) <- NewStyle.function.getCustomerByCustomerId(postedData.customer_id, cc.callContext)
+            _ <- booleanToFuture(s"Bank of the customer specified by the CUSTOMER_ID(${customer.bankId}) has to matches BANK_ID(${bankId.value}) in URL", 400, callContext) {
+              customer.bankId == bankId.value
+            }
+            _ <- booleanToFuture(CustomerAlreadyExistsForUser, 400, callContext) {
+              UserCustomerLink.userCustomerLink.vend.getUserCustomerLink(postedData.user_id, postedData.customer_id).isEmpty == true
+            }
+            userCustomerLink <- Future {
+              UserCustomerLink.userCustomerLink.vend.createUserCustomerLink(postedData.user_id, postedData.customer_id, new Date(), true)
+            } map {
+              x => unboxFullOrFail(x, callContext, CreateUserCustomerLinksError, 400)
+            }
+          } yield {
+            (code.api.v2_0_0.JSONFactory200.createUserCustomerLinkJSON(userCustomerLink), HttpCode.`201`(callContext))
+          }
+      }
+    }
+    
 
     staticResourceDocs += ResourceDoc(
       getUserCustomerLinksByCustomerId,
@@ -7255,6 +7320,74 @@ trait APIMethods400 {
             )
           } yield {
             (JSONFactory200.createUserCustomerLinkJSONs(userCustomerLinks), HttpCode.`200`(callContext))
+          }
+      }
+    }
+
+
+    staticResourceDocs += ResourceDoc(
+      createCustomer,
+      implementedInApiVersion,
+      nameOf(createCustomer),
+      "POST",
+      "/banks/BANK_ID/customers",
+      "Create Customer",
+      s"""
+         |The Customer resource stores the customer number (which is set by the backend), legal name, email, phone number, their date of birth, relationship status, education attained, a url for a profile image, KYC status etc.
+         |Dates need to be in the format 2013-01-21T23:08:00Z
+         |
+         |Note: If you need to set a specific customer number, use the Update Customer Number endpoint after this call.
+         |
+         |${authenticationRequiredMessage(true)}
+         |""",
+      postCustomerJsonV310,
+      customerJsonV310,
+      List(
+        $UserNotLoggedIn,
+        $BankNotFound,
+        InvalidJsonFormat,
+        CustomerNumberAlreadyExists,
+        UserNotFoundById,
+        CustomerAlreadyExistsForUser,
+        CreateConsumerError,
+        UnknownError
+      ),
+      List(apiTagCustomer, apiTagPerson, apiTagNewStyle),
+      Some(List(canCreateCustomer,canCreateCustomerAtAnyBank))
+    )
+    lazy val createCustomer : OBPEndpoint = {
+      case "banks" :: BankId(bankId) :: "customers" :: Nil JsonPost json -> _ => {
+        cc =>
+          for {
+            postedData <- NewStyle.function.tryons(s"$InvalidJsonFormat The Json body should be the $PostCustomerJsonV310 ", 400, cc.callContext) {
+              json.extract[PostCustomerJsonV310]
+            }
+            _ <- Helper.booleanToFuture(failMsg =  InvalidJsonContent + s" The field dependants(${postedData.dependants}) not equal the length(${postedData.dob_of_dependants.length }) of dob_of_dependants array", 400, cc.callContext) {
+              postedData.dependants == postedData.dob_of_dependants.length
+            }
+            (customer, callContext) <- NewStyle.function.createCustomer(
+              bankId,
+              postedData.legal_name,
+              postedData.mobile_phone_number,
+              postedData.email,
+              CustomerFaceImage(postedData.face_image.date, postedData.face_image.url),
+              postedData.date_of_birth,
+              postedData.relationship_status,
+              postedData.dependants,
+              postedData.dob_of_dependants,
+              postedData.highest_education_attained,
+              postedData.employment_status,
+              postedData.kyc_status,
+              postedData.last_ok_date,
+              Option(CreditRating(postedData.credit_rating.rating, postedData.credit_rating.source)),
+              Option(CreditLimit(postedData.credit_limit.currency, postedData.credit_limit.amount)),
+              postedData.title,
+              postedData.branch_id,
+              postedData.name_suffix,
+              cc.callContext,
+            )
+          } yield {
+            (JSONFactory310.createCustomerJson(customer), HttpCode.`201`(callContext))
           }
       }
     }
@@ -8127,35 +8260,6 @@ trait APIMethods400 {
           } yield {
             val consentsOfBank = Consent.filterByBankId(consents, bankId)
             (JSONFactory400.createConsentInfosJsonV400(consentsOfBank), HttpCode.`200`(cc))
-          }
-      }
-    }
-
-
-    staticResourceDocs += ResourceDoc(
-      correlatedUser,
-      implementedInApiVersion,
-      nameOf(correlatedUser),
-      "GET",
-      "/my/correlated-user/CORRELATED_USER_ID",
-      "Bound correlated user",
-      s"""Bound correlated user.""",
-      EmptyBody,
-      EmptyBody,
-      List(
-        $UserNotLoggedIn,
-        UnknownError
-      ),
-      List(apiTagUser, apiTagApi, apiTagNewStyle)
-    )
-
-    lazy val correlatedUser: OBPEndpoint = {
-      case "my" :: "correlated-user" :: correlatedUserId :: Nil JsonGet req => {
-        cc =>
-          for {
-            (successful, _) <- NewStyle.function.correlatedUser(correlatedUserId, cc.userId, cc.callContext)
-          } yield {
-            (successful, HttpCode.`200`(cc.callContext))
           }
       }
     }

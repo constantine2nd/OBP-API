@@ -707,6 +707,7 @@ import net.liftweb.util.Helpers._
           {localForm(user, false, signupFields)}
           {agreeTermsDiv}
           {agreePrivacyPolicy}
+        <div id="signup-agree-error" class="alert alert-danger hide"><span data-lift="Msg?id=error"/></div>
           <div id="signup-submit">
             <input type="submit" />
           </div>

@@ -205,19 +205,7 @@ $(document).ready(function() {
 	}
 
 	var agreeTermsCheckbox= $("#signup #signup-agree-terms #check_border")
-	// Enforce check of Terms and Conditions (if existing) on signup form
-	// $('#signup form').submit(function() {
-	// 	var agreeTerms = $('#signup #signup-agree-terms input');
-	// 	if (agreeTerms.length > 0) {
-	// 		if (!agreeTerms.prop('checked')) {
-	// 			var msg = 'Please agree to the Terms & Conditions';
-	// 			$('#signup #signup-error #error').html(msg);
-	// 			$('#signup #signup-error').removeClass('hide');
-	// 			return false;
-	// 		}
-	// 	}
-	// 	return true;
-	// });
+	
 
 	// Enforce check of Privacy Policy (if existing) on signup form
 	$('#signup form').submit(function() {
@@ -293,6 +281,20 @@ $(document).ready(function() {
 		loginPasswordError.parent().addClass('hide');
 		loginPasswordForm.css("border","").css("background","")
 	}
+	
+	// Enforce check of Terms and Conditions (if existing) on signup form
+    $('#signup form').submit(function() {
+        var agreeTerms = $('#signup #signup-agree-terms input');
+        if (agreeTerms.length > 0) {
+            if (!agreeTerms.prop('checked')) {
+                var msg = 'Please agree to the Terms & Conditions';
+                $('#signup #signup-agree-error #error').html(msg);
+                $('#signup #signup-agree-error').removeClass('hide');
+                return false;
+            }
+        }
+        return true;
+    });
 
 	var consumerRegistrationAppnameError = $('#register-consumer-input #consumer-registration-app-name-error');
 	var consumerRegistrationAppnameForm = $('#register-consumer-input #appName');

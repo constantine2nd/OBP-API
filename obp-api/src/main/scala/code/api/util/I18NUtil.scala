@@ -17,8 +17,8 @@ object I18NUtil {
   }
 
   def getLocale(): Locale = Locale.getAvailableLocales().toList.filter { l =>
-    l.toLanguageTag == Props.get("language_tag", "en-GB")
-  }.headOption.getOrElse(Locale.ENGLISH)
+    l.toLanguageTag == ApiPropsWithAlias.defaultLocale
+  }.headOption.getOrElse(new Locale(ApiPropsWithAlias.defaultLocale))
   
   def currentLocale() : Locale = {
     // Cookie name

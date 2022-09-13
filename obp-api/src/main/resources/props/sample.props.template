@@ -548,7 +548,7 @@ webui_register_consumer_success_message_email = Thank you for registering to use
 # Set Locale
 # Please note that depricated name ot this props is: language_tag
 default_locale = en-GB
-
+supported_locales = en-GB
 
 
 ## API Options

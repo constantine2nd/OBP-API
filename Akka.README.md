@@ -52,8 +52,6 @@ cd ${HOME}/OBP-API/ && /usr/bin/nohup /usr/bin/mvn compile exec:java -Dexec.main
 
 ```ini
 # Define is Akka transport layer used by OBP-API
-# In case that property is not defined default value is set to false
-use_akka=false
 # Local end gets data remotely
 remotedata.enable=true
 # Your remote's public IP address

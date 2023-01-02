@@ -46,7 +46,7 @@ import code.users.Users
 import code.util.Helper
 import com.openbankproject.commons.model._
 import com.openbankproject.commons.util.{ReflectUtils, RequiredFieldValidation, RequiredFields}
-import net.liftweb.common.{Box, Full}
+import net.liftweb.common.{Box, Empty, Full}
 import net.liftweb.json.Extraction.decompose
 import net.liftweb.json.JsonAST.JValue
 
@@ -794,7 +794,7 @@ object JSONFactory220 {
     val f8 = CachedFunctionJSON("getCounterpartiesFromTransaction", APIUtil.getPropsValue("connector.cache.ttl.seconds.getCounterpartiesFromTransaction", "0").toInt)
 
     val akkaPorts = PortJSON("remotedata.local.port", ObpActorConfig.localPort.toString) :: PortJSON("remotedata.port", ObpActorConfig.remotePort) :: Nil
-    val akka = AkkaJSON(akkaPorts, ObpActorConfig.akka_loglevel, APIUtil.akkaSanityCheck())
+    val akka = AkkaJSON(akkaPorts, ObpActorConfig.akka_loglevel, Empty)
     val cache = f1::f2::f3::f4::f5::f6::f7::f8::Nil
 
     val metrics = MetricsJSON("es.metrics.port.tcp", APIUtil.getPropsValue("es.metrics.port.tcp", "9300")) ::

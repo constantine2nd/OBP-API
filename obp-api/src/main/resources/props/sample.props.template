@@ -705,10 +705,6 @@ dauth.host=127.0.0.1
 # -------------------------------------- DAuth--
 
 
-# Disable akka (Remote storage not possible)
-use_akka=false
-
-
 # -- Display internal errors --------------------------------------
 # Enable/Disable showing of nested/chained error messages to an end user
 # When is disabled we show only last message which should be a user friendly one. For instance:

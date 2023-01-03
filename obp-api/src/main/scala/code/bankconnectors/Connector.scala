@@ -16,7 +16,6 @@ import code.api.v4_0_0.ModeratedFirehoseAccountsJsonV400
 import code.api.{APIFailure, APIFailureNewStyle}
 import code.bankattribute.BankAttribute
 import code.bankconnectors.LocalMappedConnector.setUnimplementedError
-import code.bankconnectors.akka.AkkaConnector_vDec2018
 import code.bankconnectors.rest.RestConnector_vMar2019
 import code.bankconnectors.storedprocedure.StoredProcedureConnector_vDec2019
 import code.bankconnectors.vMay2019.KafkaMappedConnector_vMay2019
@@ -78,7 +77,6 @@ object Connector extends SimpleInjector {
 
   val nameToConnector: Map[String, () => Connector] = Map(
     "mapped" -> lazyValue(LocalMappedConnector),
-    "akka_vDec2018" -> lazyValue(AkkaConnector_vDec2018),
     "mongodb" -> lazyValue(LocalRecordConnector),
     "kafka_vSept2018" -> lazyValue(KafkaMappedConnector_vSept2018),
     "kafka_vMay2019" -> lazyValue(KafkaMappedConnector_vMay2019),

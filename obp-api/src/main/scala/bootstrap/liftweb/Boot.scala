@@ -352,14 +352,7 @@ class Boot extends MdcLoggable {
     logger.debug(s"If you can read this, logging level is debug")
 
     val actorSystem = ObpActorSystem.startLocalActorSystem()
-    connector match {
-      case "akka_vDec2018" =>
-        // Start Actor system of Akka connector
-        ObpActorSystem.startNorthSideAkkaConnectorActorSystem()
-      case "star" if (APIUtil.getPropsValue("starConnector_supported_types","").split(",").contains("akka"))  =>
-        ObpActorSystem.startNorthSideAkkaConnectorActorSystem()
-      case _ => // Do nothing
-    }
+
 
     if (Props.devMode || Props.testMode) {
       StoredProceduresMockedData.createOrDropMockedPostgresStoredProcedures()

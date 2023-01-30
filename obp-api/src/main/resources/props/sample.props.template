@@ -801,23 +801,6 @@ featured_apis=elasticSearchWarehouseV300
 # mapper_rules.create_foreign_keys=false
 # -----------------------------------------------
 
-# -- Akka connector --------------------------------------------
-# Define mapper rules
-# In case isn't defined default value is "127.0.0.1"
-# akka_connector.hostname=127.0.0.1
-# In case isn't defined default value is "2662"
-# akka_connector.port=2662
-# In case isn't defined default value is "INFO"
-# akka_connector.loglevel=INFO/DEBUG etc.
-# In case isn't defined default value is "akka-connector-actor"
-# akka_connector.name_of_actor=SOME_ACTOR_NAME
-# akka connector timeout seconds, default is 3 seconds
-# akka_connector.timeout=10
-## When akka_connector.embedded_adapter set true, will start embed akka adapter,
-## Outbound akka message will be sent to this embedded akka adapter's Actor. the default value is false
-#akka_connector.embedded_adapter=true
-# --------------------------------------------------------------
-
 
 # -- Rest connector --------------------------------------------
 # If Rest Connector do not get the response in the following seconds, it will throw the error message back.

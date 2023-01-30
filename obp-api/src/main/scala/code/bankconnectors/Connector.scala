@@ -2,6 +2,7 @@ package code.bankconnectors
 
 import java.util.Date
 import java.util.UUID.randomUUID
+
 import _root_.akka.http.scaladsl.model.HttpMethod
 import code.accountholders.{AccountHolders, MapperAccountHolders}
 import code.api.Constant.localIdentityProvider
@@ -13,11 +14,8 @@ import code.api.util.ErrorMessages._
 import code.api.util._
 import code.api.v1_4_0.JSONFactory1_4_0.TransactionRequestAccountJsonV140
 import code.api.v2_1_0._
-import code.api.v4_0_0.ModeratedFirehoseAccountsJsonV400
 import code.api.{APIFailure, APIFailureNewStyle}
 import code.bankattribute.BankAttribute
-import code.bankconnectors.LocalMappedConnector.setUnimplementedError
-import code.bankconnectors.akka.AkkaConnector_vDec2018
 import code.bankconnectors.rest.RestConnector_vMar2019
 import code.bankconnectors.storedprocedure.StoredProcedureConnector_vDec2019
 import code.bankconnectors.vMay2019.KafkaMappedConnector_vMay2019
@@ -28,7 +26,6 @@ import code.fx.fx.TTL
 import code.management.ImporterAPI.ImporterTransaction
 import code.model.dataAccess.{BankAccountRouting, ResourceUser}
 import code.model.toUserExtended
-import code.productfee.ProductFeeX
 import code.standingorders.StandingOrderTrait
 import code.transactionrequests.TransactionRequests
 import code.transactionrequests.TransactionRequests.TransactionRequestTypes._
@@ -46,7 +43,6 @@ import com.openbankproject.commons.util.Functions.lazyValue
 import com.openbankproject.commons.util.{JsonUtils, ReflectUtils}
 import com.tesobe.CacheKeyFromArguments
 import net.liftweb.common._
-import net.liftweb.http.provider.HTTPParam
 import net.liftweb.json
 import net.liftweb.json.{Formats, JObject, JValue}
 import net.liftweb.mapper.By
@@ -79,7 +75,6 @@ object Connector extends SimpleInjector {
 
   val nameToConnector: Map[String, () => Connector] = Map(
     "mapped" -> lazyValue(LocalMappedConnector),
-    "akka_vDec2018" -> lazyValue(AkkaConnector_vDec2018),
     "kafka_vSept2018" -> lazyValue(KafkaMappedConnector_vSept2018),
     "kafka_vMay2019" -> lazyValue(KafkaMappedConnector_vMay2019),
     "rest_vMar2019" -> lazyValue(RestConnector_vMar2019),

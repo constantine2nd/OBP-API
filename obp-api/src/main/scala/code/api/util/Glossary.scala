@@ -113,13 +113,6 @@ object Glossary extends MdcLoggable  {
 		s"""<a href="/message-docs?connector=$latestKafkaConnector#$process">$process</a>"""
 	}
 
-	val latestAkkaConnector : String = "akka_vDec2018"
-	def messageDocLinkAkka(process: String) : String = {
-		s"""<a href="/message-docs?connector=$latestAkkaConnector#$process">$process</a>"""
-	}
-
-
-
 
 	glossaryItems += GlossaryItem(
 		title = "Cheat Sheet",
@@ -157,111 +150,6 @@ object Glossary extends MdcLoggable  {
 				 				 |
 
 				 				 |
-""")
-
-
-
-
-
-
-
-	glossaryItems += GlossaryItem(
-		title = "Adapter.Akka.Intro",
-		description =
-			s"""
-				 |## Use Akka as an interface between OBP and your Core Banking System (CBS).
-|
-|For an introduction to Akka see [here](https://akka.io/)
-|
-|The OBP Akka interface allows integrators to write Java or Scala Adapters (any JVM language with Akka support)
-|respond to requests for data and services from OBP.
-|
-|For the message definitions see [here](/message-docs?connector=akka_vDec2018)
-|
-|### Installation Prerequisites
-|
-|
-|* You have OBP-API running.
-|
-|* Ideally you have API Explorer running (the application serving this page) but its not necessary - you could use any other REST client.
-|* You might want to also run API Manager as it makes it easier to grant yourself roles, but its not necessary - you could use the API Explorer / any REST client instead.
-|
-|
-|### Create a Customer User and an Admin User
-|
-|* Register a User who will use the API as a Customer.
-|* Register another User that will use the API as an Admin. The Admin user will need some Roles. See [here](/index#OBPv2_0_0-addEntitlement). You can bootstrap an Admin user by editing the Props file. See the README for that.
-|
-|### Add some authentication context to the Customer User
-|
-|* As the Admin User, use the [Create Auth Context](/index#OBPv3_1_0-createUserAuthContext) endpoint to add one or more attributes to the Customer User.
-|For instance you could add the name/value pair CUSTOMER_NUMBER/889763 and this will be sent to the Adapter / CBS inside the AuthInfo object.
-|
-|
-|Now you should be able to use the [Get Auth Contexts](/index#OBPv3_1_0-getUserAuthContexts) endpoint to see the data you added.
-|
-|### Write or Build an Adapter to respond to the following messages.
-|
-| When getting started, we suggest that you implement the messages in the following order:
-|
-|1) Core (Prerequisites) - Get Adapter, Get Banks, Get Bank
-|
-|* ${messageDocLinkAkka("obp.getAdapterInfo")}
-|
-|Now you should be able to use the [Adapter Info](/index#OBPv3_1_0-getAdapterInfo) endpoint
-|
-|* ${messageDocLinkAkka("obp.getBanks")}
-|
-|Now you should be able to use the [Get Banks](/index#OBPv3_0_0-getBanks) endpoint
-|
-|* ${messageDocLinkAkka("obp.getBank")}
-|
-|Now you should be able to use the [Get Bank](/index#OBPv3_0_0-bankById) endpoint
-|
-|
-|2) Get Customers by USER_ID
-|
-|* ${messageDocLinkAkka("obp.getCustomersByUserId")}
-|
-|Now you should be able to use the [Get Customers](/index#OBPv3_0_0-get.CustomersByUserId) endpoint.
-|
-|
-|3) Get Accounts
-|
-|* ${messageDocLinkAkka("obp.checkBankAccountExists")}
-|* ${messageDocLinkAkka("obp.getCoreBankAccounts")}
-|
-| The above messages should enable at least the following endpoints:
-|
-|* [Get Accounts at Bank (IDs only)](/index#OBPv3_0_0-getPrivateAccountIdsbyBankId)
-|* [Get Accounts at Bank (Minimal).](/index#OBPv3_0_0-privateAccountsAtOneBank)
-|* [Get Accounts at all Banks (private)](/index#OBPv3_0_0-corePrivateAccountsAllBanks)
-|
-|4) Get Account
-|
-|* ${messageDocLinkAkka("obp.getBankAccount")}
-|
-| The above message should enable at least the following endpoints:
-|
-|* [Get Account by Id - Core](/index#OBPv3_0_0-getCoreAccountById)
-|* [Get Account by Id - Full](/index#OBPv3_0_0-getPrivateAccountById)
-|
-|5) Get Transactions
-|
-|* ${messageDocLinkAkka("obp.getTransactions")}
-|* ${messageDocLinkAkka("obp.getTransaction")}
-|
-|6) Manage Counterparties
-|
-|* ${messageDocLinkAkka("obp.getCounterparties")}
-|
-|7) Get Transaction Request Types
-|
-|* This is configured using OBP Props - No messages required
-|
-|
-|This glossary item is Work In Progress.
-|
 """)
 
 

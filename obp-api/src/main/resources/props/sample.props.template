@@ -14,7 +14,6 @@
 ## Which data connector to use, if config `star` as connector, please also check `starConnector_supported_types` 
 #connector=mapped
 #connector=mongodb
-#connector=akka_vDec2018
 #connector=rest_vMar2019
 #connector=stored_procedure_vDec2019
 connector=star

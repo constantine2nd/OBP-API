@@ -216,19 +216,10 @@ class MappedTransaction extends LongKeyedMapper[MappedTransaction] with IdPK wit
   }
 
   def toTransaction : Option[Transaction] = {
-    APIUtil.getPropsValue("connector") match {
-      case Full("akka_vDec2018") =>
-        for {
-          acc <- getBankAccountCommon(theBankId, theAccountId, None).map(_._1)
-          transaction <- toTransaction(acc)
-        } yield transaction
-      case _ =>
-        for {
-          acc <- LocalMappedConnector.getBankAccountOld(theBankId, theAccountId)
-          transaction <- toTransaction(acc)
-        } yield transaction
-    }
-    
+    for {
+      acc <- LocalMappedConnector.getBankAccountOld(theBankId, theAccountId)
+      transaction <- toTransaction(acc)
+    } yield transaction
   }
 
 }

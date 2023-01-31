@@ -2,10 +2,8 @@ package code.usercustomerlinks
 
 import java.util.Date
 
-import code.api.util.APIUtil
-import code.remotedata.RemotedataUserCustomerLinks
 import net.liftweb.common.Box
-import net.liftweb.util.{Props, SimpleInjector}
+import net.liftweb.util.SimpleInjector
 
 import scala.concurrent.Future
 
@@ -14,11 +12,7 @@ object UserCustomerLink extends SimpleInjector {
 
   val userCustomerLink = new Inject(buildOne _) {}
 
-  def buildOne: UserCustomerLinkProvider =
-    APIUtil.getPropsAsBoolValue("use_akka", false) match {
-      case false  => MappedUserCustomerLinkProvider
-      case true => RemotedataUserCustomerLinks     // We will use Akka as a middleware
-    }
+  def buildOne: UserCustomerLinkProvider = MappedUserCustomerLinkProvider
 
 }
 
@@ -33,20 +27,6 @@ trait UserCustomerLinkProvider {
   def bulkDeleteUserCustomerLinks(): Boolean
   def deleteUserCustomerLink(userCustomerLinkId: String): Future[Box[Boolean]]
 }
-
-class RemotedataUserCustomerLinkProviderCaseClass {
-  case class createUserCustomerLink(userId: String, customerId: String, dateInserted: Date, isActive: Boolean)
-  case class getOCreateUserCustomerLink(userId: String, customerId: String, dateInserted: Date, isActive: Boolean)
-  case class getUserCustomerLinkByCustomerId(customerId: String)
-  case class getUserCustomerLinksByCustomerId(customerId: String)
-  case class getUserCustomerLinksByUserId(userId: String)
-  case class getUserCustomerLink(userId: String, customerId: String)
-  case class getUserCustomerLinks()
-  case class bulkDeleteUserCustomerLinks()
-  case class deleteUserCustomerLink(userCustomerLinkId: String)
-}
-
-object RemotedataUserCustomerLinkProviderCaseClass extends RemotedataUserCustomerLinkProviderCaseClass
 
 trait UserCustomerLink {
   def userCustomerLinkId: String

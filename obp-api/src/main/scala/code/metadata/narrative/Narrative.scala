@@ -1,19 +1,13 @@
 package code.metadata.narrative
 
-import code.api.util.APIUtil
-import code.remotedata.RemotedataNarratives
 import com.openbankproject.commons.model.{AccountId, BankId, TransactionId}
-import net.liftweb.util.{Props, SimpleInjector}
+import net.liftweb.util.SimpleInjector
 
 object Narrative extends SimpleInjector {
 
   val narrative = new Inject(buildOne _) {}
 
-  def buildOne: Narrative =
-    APIUtil.getPropsAsBoolValue("use_akka", false) match {
-      case false  => MappedNarratives
-      case true => RemotedataNarratives     // We will use Akka as a middleware
-    }
+  def buildOne: Narrative = MappedNarratives
 
 }
 
@@ -34,12 +28,3 @@ trait Narrative {
   def bulkDeleteNarratives(bankId: BankId, accountId: AccountId): Boolean
 
 }
-
-class RemoteNarrativesCaseClasses {
-  case class getNarrative(bankId: BankId, accountId: AccountId, transactionId: TransactionId)
-  case class setNarrative(bankId: BankId, accountId: AccountId, transactionId: TransactionId, narrative: String)
-  case class bulkDeleteNarrativeOnTransaction(bankId: BankId, accountId: AccountId, transactionId: TransactionId)
-  case class bulkDeleteNarratives(bankId: BankId, accountId: AccountId)
-}
-
-object RemoteNarrativesCaseClasses extends RemoteNarrativesCaseClasses

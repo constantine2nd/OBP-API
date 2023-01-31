@@ -30,8 +30,10 @@ package code.api.util
 import java.io.InputStream
 import java.net.URLDecoder
 import java.nio.charset.Charset
+import java.security.AccessControlException
 import java.text.{ParsePosition, SimpleDateFormat}
 import java.util.concurrent.ConcurrentHashMap
+import java.util.regex.Pattern
 import java.util.{Calendar, Date, UUID}
 
 import code.UserRefreshes.UserRefreshes
@@ -44,19 +46,16 @@ import code.api.berlin.group.v1.OBP_BERLIN_GROUP_1
 import code.api.builder.OBP_APIBuilder
 import code.api.dynamic.endpoint.OBPAPIDynamicEndpoint
 import code.api.dynamic.endpoint.helper.{DynamicEndpointHelper, DynamicEndpoints}
+import code.api.dynamic.entity.OBPAPIDynamicEntity
+import code.api.dynamic.entity.helper.DynamicEntityHelper
 import code.api.oauth1a.Arithmetics
 import code.api.oauth1a.OauthParams._
 import code.api.util.APIUtil.ResourceDoc.{findPathVariableNames, isPathVariable}
 import code.api.util.ApiRole.{canCreateProduct, canCreateProductAtAnyBank}
 import code.api.util.ApiTag.{ResourceDocTag, apiTagBank, apiTagNewStyle}
 import code.api.util.Glossary.GlossaryItem
-import code.api.util.RateLimitingJson.CallLimit
 import code.api.v1_2.ErrorMessage
 import code.api.v2_0_0.CreateEntitlementJSON
-import code.api.dynamic.endpoint.helper.DynamicEndpointHelper
-import code.api.dynamic.entity.OBPAPIDynamicEntity
-import code.api._
-import code.api.dynamic.entity.helper.DynamicEntityHelper
 import code.api.v5_0_0.OBPAPI5_0_0
 import code.api.{DirectLogin, _}
 import code.authtypevalidation.AuthenticationTypeValidationProvider
@@ -67,9 +66,9 @@ import code.entitlement.Entitlement
 import code.metrics._
 import code.model._
 import code.model.dataAccess.AuthUser
-import code.sanitycheck.SanityCheck
 import code.scope.Scope
 import code.usercustomerlinks.UserCustomerLink
+import code.users.Users
 import code.util.Helper.{MdcLoggable, SILENCE_IS_GOLDEN}
 import code.util.{Helper, JsonSchemaUtil}
 import code.views.{MapperViews, Views}
@@ -82,7 +81,7 @@ import com.openbankproject.commons.model.enums.{PemCertificateRole, StrongCustom
 import com.openbankproject.commons.model.{Customer, UserAuthContext, _}
 import com.openbankproject.commons.util.Functions.Implicits._
 import com.openbankproject.commons.util.Functions.Memo
-import com.openbankproject.commons.util._
+import com.openbankproject.commons.util.{ApiVersion, Functions, JsonAble, ReflectUtils, ScannedApiVersion, _}
 import dispatch.url
 import javassist.expr.{ExprEditor, MethodCall}
 import javassist.{ClassPool, LoaderClassPath}
@@ -104,20 +103,6 @@ import org.apache.commons.lang3.StringUtils
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{List, Nil}
 import scala.collection.{immutable, mutable}
-import com.openbankproject.commons.ExecutionContext.Implicits.global
-import com.openbankproject.commons.util.{ApiVersion, Functions, JsonAble, ReflectUtils, ScannedApiVersion}
-import com.openbankproject.commons.util.Functions.Implicits._
-import com.openbankproject.commons.util.Functions.Memo
-import javassist.{ClassPool, LoaderClassPath}
-import javassist.expr.{ExprEditor, MethodCall}
-import org.apache.commons.io.IOUtils
-import org.apache.commons.lang3.StringUtils
-import java.security.AccessControlException
-import java.util.regex.Pattern
-
-import code.users.Users
-
-import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.concurrent.Future
 import scala.io.BufferedSource
@@ -2272,17 +2257,7 @@ object APIUtil extends MdcLoggable with CustomJsonFormats{
     logAPICall(callContext.map(_.copy(endTime = Some(endTime))))
     result
   }
-
-  def akkaSanityCheck (): Box[Boolean] = {
-    getPropsAsBoolValue("use_akka", false) match {
-      case true =>
-        val remotedataSecret = APIUtil.getPropsValue("remotedata.secret").openOrThrowException("Cannot obtain property remotedata.secret")
-        SanityCheck.sanityCheck.vend.remoteAkkaSanityCheck(remotedataSecret)
-      case false => Empty
-    }
-
-
-  }
+  
   /**
    * The POST or PUT body.  This will be empty if the content
    * type is application/x-www-form-urlencoded or a multipart mime.

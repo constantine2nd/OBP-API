@@ -1,6 +1,5 @@
 package code.views
 
-import bootstrap.liftweb.ToSchemify
 import code.accountholders.MapperAccountHolders
 import code.api.APIFailure
 import code.api.Constant._
@@ -10,24 +9,20 @@ import code.api.util.ErrorMessages._
 import code.util.Helper.MdcLoggable
 import code.views.system.ViewDefinition.create
 import code.views.system.{AccountAccess, ViewDefinition}
+import com.openbankproject.commons.ExecutionContext.Implicits.global
 import com.openbankproject.commons.model.{UpdateViewJSON, _}
 import net.liftweb.common._
-import net.liftweb.mapper.{Ascending, By, ByList, NullRef, OrderBy, PreCache, Schemifier}
+import net.liftweb.mapper._
 import net.liftweb.util.Helpers._
 import net.liftweb.util.StringHelpers
 
 import scala.collection.immutable.List
-import com.openbankproject.commons.ExecutionContext.Implicits.global
-
-import scala.collection.immutable
 import scala.concurrent.Future
 
 //TODO: Replace BankAccountUIDs with bankPermalink + accountPermalink
 
 
 object MapperViews extends Views with MdcLoggable {
-
-  Schemifier.schemify(true, Schemifier.infoF _, ToSchemify.modelsRemotedata: _*)
   
   private def getViewsForUser(user: User): List[View] = {
     val privileges = AccountAccess.findAll(

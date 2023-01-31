@@ -794,7 +794,7 @@ object JSONFactory220 {
     val f8 = CachedFunctionJSON("getCounterpartiesFromTransaction", APIUtil.getPropsValue("connector.cache.ttl.seconds.getCounterpartiesFromTransaction", "0").toInt)
 
     val akkaPorts = PortJSON("remotedata.local.port", ObpActorConfig.localPort.toString) :: PortJSON("remotedata.port", ObpActorConfig.remotePort) :: Nil
-    val akka = AkkaJSON(akkaPorts, ObpActorConfig.akka_loglevel, APIUtil.akkaSanityCheck())
+    val akka = AkkaJSON(akkaPorts, ObpActorConfig.akka_loglevel, None)
     val cache = f1::f2::f3::f4::f5::f6::f7::f8::Nil
 
     val metrics = MetricsJSON("es.metrics.port.tcp", APIUtil.getPropsValue("es.metrics.port.tcp", "9300")) ::

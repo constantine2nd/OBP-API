@@ -1227,7 +1227,7 @@ object JSONFactory400 {
       challenges = {
         try {
           challenges.map(challenge =>{
-          val otpViaWebFormPath = Constant.HostName + List(
+          val otpViaWebFormPath = Constant.localIdentityProvider + List(
             "/otp?flow=transaction_request&bankId=",
             stringOrNull(tr.from.bank_id),
             "&accountId=",
@@ -1241,7 +1241,7 @@ object JSONFactory400 {
             stringOrNull(challenge.challengeId)
           ).mkString("")
           
-          val otpViaApiPath = Constant.HostName + List(
+          val otpViaApiPath = Constant.localIdentityProvider + List(
             "/obp/v4.0.0/banks/",
             stringOrNull(tr.from.bank_id),
             "/accounts/",

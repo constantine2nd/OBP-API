@@ -128,8 +128,8 @@ class ConsumerRegistration extends MdcLoggable {
     }
 
     def showResults(consumer : Consumer) = {
-      val urlOAuthEndpoint = Constant.HostName + "/oauth/initiate"
-      val urlDirectLoginEndpoint = Constant.HostName + "/my/logins/direct"
+      val urlOAuthEndpoint = Constant.localIdentityProvider + "/oauth/initiate"
+      val urlDirectLoginEndpoint = Constant.localIdentityProvider + "/my/logins/direct"
       val jwksUri = jwksUriVar.is
       val jwks = jwksVar.is
       val jwsAlg = signingAlgVar.is
@@ -398,7 +398,7 @@ class ConsumerRegistration extends MdcLoggable {
       val consumerKeyOrMessage : String = if (sendSensitive) registered.key.get else "Configured so sensitive data is not sent by email (Consumer Key)."
       val consumerSecretOrMessage : String = if (sendSensitive) registered.secret.get else "Configured so sensitive data is not sent by email (Consumer Secret)."
 
-      val thisApiInstance = Constant.HostName
+      val thisApiInstance = Constant.localIdentityProvider
       val apiExplorerUrl = getWebUiPropsValue("webui_api_explorer_url", "unknown host")
       val directLoginDocumentationUrl = getWebUiPropsValue("webui_direct_login_documentation_url", apiExplorerUrl + "/glossary#Direct-Login")
       val oauthDocumentationUrl = getWebUiPropsValue("webui_oauth_1_documentation_url", apiExplorerUrl + "/glossary#OAuth-1.0a")
@@ -450,7 +450,7 @@ class ConsumerRegistration extends MdcLoggable {
       toAddressesString <- APIUtil.getPropsValue("mail.api.consumer.registered.notification.addresses") ?~ "Could not send mail: Missing props param for 'to'"
     } yield {
 
-      val thisApiInstance = Constant.HostName
+      val thisApiInstance = Constant.localIdentityProvider
       val registrationMessage = s"New user signed up for API keys on $thisApiInstance. \n" +
       		s"Email: ${registered.developerEmail.get} \n" +
       		s"App name: ${registered.name.get} \n" +

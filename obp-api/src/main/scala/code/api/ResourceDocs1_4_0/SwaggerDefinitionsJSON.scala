@@ -3424,7 +3424,7 @@ object SwaggerDefinitionsJSON {
 
   val accountList = AccountList(List(accountJsonUKOpenBanking_v200))
   
-  val links =  Links(Self = s"${Constant.HostName}/open-banking/v2.0/accounts/")
+  val links =  Links(Self = s"${Constant.localIdentityProvider}/open-banking/v2.0/accounts/")
   
   val metaUK = JSONFactory_UKOpenBanking_200.MetaUK(1) 
   
@@ -3682,7 +3682,7 @@ object SwaggerDefinitionsJSON {
 
   val transactionsJsonUKV200 = TransactionsJsonUKV200(
     Data = transactionsInnerJson,
-    Links = links.copy(s"${Constant.HostName}/open-banking/v2.0/accounts/22289/transactions/"),
+    Links = links.copy(s"${Constant.localIdentityProvider}/open-banking/v2.0/accounts/22289/transactions/"),
     Meta = metaInnerJson
   )
   
@@ -3711,7 +3711,7 @@ object SwaggerDefinitionsJSON {
   
   val accountBalancesUKV200 = AccountBalancesUKV200(
     Data = dataJsonUK200,
-    Links = links.copy(s"${Constant.HostName}/open-banking/v2.0/accounts/22289/balances/"),
+    Links = links.copy(s"${Constant.localIdentityProvider}/open-banking/v2.0/accounts/22289/balances/"),
     Meta = metaBisJson
   )
   

@@ -740,9 +740,10 @@ object OAuthHandshake extends RestHelper with MdcLoggable {
     // Decode OAuth parameters in order to get original state
     val decodedOAuthParams: List[(String, String)] = decodeOAuthParams(OAuthparameters)
     // Signature Base String Construction
-    val signatureBase = Arithmetics.concatItemsForSignature(httpMethod, HostName + sUri, urlParameters(urlParams), Nil, decodedOAuthParams)
+    val signatureBase = Arithmetics.concatItemsForSignature(httpMethod, localIdentityProvider + sUri, urlParameters(urlParams), Nil, decodedOAuthParams)
     val computedSignature = Arithmetics.sign(signatureBase, consumerSecret, tokenSecret, signingAlgorithm)
     val received: String = OAuthparameters.get(SignatureName).get
+    
     val receivedAndDecoded: String = URLDecoder.decode(OAuthparameters.get(SignatureName).get,"UTF-8")
     val computedAndEncoded: String = URLEncoder.encode(computedSignature, "UTF-8")
     logger.debug("OAuthparameters: " + OAuthparameters)

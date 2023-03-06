@@ -116,7 +116,7 @@ object OAuthAuthorisation {
           val oauthQueryParams: List[(String, String)] = (TokenName, unencodedTokenParam) ::(VerifierName, verifier) :: Nil
           val applicationRedirectionUrl = appendParams(appToken.callbackURL.get, oauthQueryParams)
           val encodedApplicationRedirectionUrl = urlEncode(applicationRedirectionUrl)
-          val redirectionUrl = Constant.HostName + OAuthWorkedThanks.menu.loc.calcDefaultHref
+          val redirectionUrl = Constant.localIdentityProvider + OAuthWorkedThanks.menu.loc.calcDefaultHref
           val redirectionParam = List(("redirectUrl", encodedApplicationRedirectionUrl))
           //The URLs get from callbankURL or OAuthWorkedThanks, they are all internal ones, no open redirect issue.
           S.redirectTo(appendParams(redirectionUrl, redirectionParam))

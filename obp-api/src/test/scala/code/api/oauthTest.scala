@@ -68,7 +68,7 @@ class OAuthTest extends ServerSetup {
   def oauthRequest = baseRequest / "oauth"
 
   //a url that will be guaranteed to resolve when the oauth redirects us to it
-  val selfCallback = Constant.HostName
+  val selfCallback = Constant.localIdentityProvider
 
   val accountValidationError = ResourceBundle.getBundle(LiftRules.liftCoreResourceName).getObject("account.validation.error").toString
 

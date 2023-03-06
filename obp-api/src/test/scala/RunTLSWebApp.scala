@@ -47,7 +47,7 @@ object RunTLSWebApp extends App with PropsProgrammatically {
   // Props hostname MUST be set to https protocol. 
   // Otherwise OAuth1.0a computed signature at OBP-API side cannot match API-Explorer generates
   // This automatic adjustment should enable out-of-box feature
-  setPropsValues("hostname"-> Constant.HostName.replaceFirst("http", "https"))
+  setPropsValues("hostname"-> Constant.localIdentityProvider.replaceFirst("http", "https"))
 
   {
     val tempHTTPContext = JProxy.newProxyInstance(this.getClass.getClassLoader, Array(classOf[HTTPContext]),

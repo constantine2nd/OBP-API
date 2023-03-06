@@ -299,7 +299,7 @@ object SwaggerJSONFactory extends MdcLoggable {
     val infoContact = InfoContactJson("TESOBE GmbH. / Open Bank Project", "https://openbankproject.com" ,"contact@tesobe.com")
     val infoApiVersion = requestedApiVersion
     val info = InfoJson(infoTitle, infoDescription, infoContact, infoApiVersion.toString)
-    val host = Constant.HostName.replaceFirst("http://", "").replaceFirst("https://", "")
+    val host = Constant.localIdentityProvider.replaceFirst("http://", "").replaceFirst("https://", "")
     val basePath = "/"
     val schemas = List("http", "https")
     // Paths Object

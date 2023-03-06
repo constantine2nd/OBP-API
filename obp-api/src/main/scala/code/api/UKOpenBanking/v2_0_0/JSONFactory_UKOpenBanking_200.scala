@@ -128,7 +128,7 @@ object JSONFactory_UKOpenBanking_200 extends CustomJsonFormats {
     )
     Accounts(
       Data = AccountList(list),
-      Links = Links(Self = Constant.HostName + "/open-banking/v2.0/accounts"),
+      Links = Links(Self = Constant.localIdentityProvider + "/open-banking/v2.0/accounts"),
       Meta = MetaUK(TotalPages = 1)
     )
   }
@@ -162,7 +162,7 @@ object JSONFactory_UKOpenBanking_200 extends CustomJsonFormats {
     )
     TransactionsJsonUKV200(
       Data = TransactionsInnerJson(transactionsInnerJson),
-      Links = Links(Constant.HostName + s"/open-banking/v2.0/accounts/${accountId}/transactions/"),
+      Links = Links(Constant.localIdentityProvider + s"/open-banking/v2.0/accounts/${accountId}/transactions/"),
       Meta = MetaInnerJson(
         TotalPages = 1,
         FirstAvailableDateTime = DateWithDayExampleObject,
@@ -188,7 +188,7 @@ object JSONFactory_UKOpenBanking_200 extends CustomJsonFormats {
     )
     Accounts(
       Data = AccountList(list),
-      Links = Links(Self = s"${Constant.HostName}/open-banking/v2.0/accounts/" + list.head.AccountId),
+      Links = Links(Self = s"${Constant.localIdentityProvider}/open-banking/v2.0/accounts/" + list.head.AccountId),
       Meta = MetaUK(TotalPages = 1)
     )
   }
@@ -211,7 +211,7 @@ object JSONFactory_UKOpenBanking_200 extends CustomJsonFormats {
     
     AccountBalancesUKV200(
       Data = dataJson,
-      Links = Links(s"${Constant.HostName}/open-banking/v2.0/accounts/${accountId}/balances/"),
+      Links = Links(s"${Constant.localIdentityProvider}/open-banking/v2.0/accounts/${accountId}/balances/"),
       Meta = MetaBisJson(1)
     )
   }
@@ -233,7 +233,7 @@ object JSONFactory_UKOpenBanking_200 extends CustomJsonFormats {
     
     AccountBalancesUKV200(
       Data = dataJson,
-      Links = Links(s"${Constant.HostName}/open-banking/v2.0/balances/"),
+      Links = Links(s"${Constant.localIdentityProvider}/open-banking/v2.0/balances/"),
       Meta = MetaBisJson(1)
     )
   }

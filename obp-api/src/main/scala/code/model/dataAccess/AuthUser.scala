@@ -566,7 +566,7 @@ import net.liftweb.util.Helpers._
       case u if u.validated_? =>
         u.resetUniqueId().save
         //NOTE: here, if server_mode = portal, so we need modify the resetLink to portal_hostname, then developer can get proper response..
-        val resetPasswordLinkProps = Constant.HostName
+        val resetPasswordLinkProps = Constant.localIdentityProvider
         val resetPasswordLink = APIUtil.getPropsValue("portal_hostname", resetPasswordLinkProps)+
           passwordResetPath.mkString("/", "/", "/")+urlEncode(u.getUniqueId())
         Mailer.sendMail(From(emailFrom),Subject(passwordResetEmailSubject + " - " + u.username),
@@ -610,7 +610,7 @@ import net.liftweb.util.Helpers._
    * Overridden to use the hostname set in the props file
    */
   override def sendValidationEmail(user: TheUserType) {
-    val resetLink = Constant.HostName+"/"+validateUserPath.mkString("/")+
+    val resetLink = Constant.localIdentityProvider+"/"+validateUserPath.mkString("/")+
       "/"+urlEncode(user.getUniqueId())
 
     val email: String = user.getEmail
@@ -870,7 +870,7 @@ import net.liftweb.util.Helpers._
           }
       // Everything else.
       case _ =>
-        LoginAttempt.incrementBadLoginAttempts(user.foreign.map(_.provider).getOrElse(Constant.HostName), username)
+        LoginAttempt.incrementBadLoginAttempts(user.foreign.map(_.provider).getOrElse(Constant.localIdentityProvider), username)
         Empty
     }
   }
@@ -1142,7 +1142,7 @@ def restoreSomeSessions(): Unit = {
                       AfterApiAuth.innerLoginUserInitAction(Full(user))
                       checkInternalRedirectAndLogUserIn(preLoginState, redirect, user)
                     case _ =>
-                      LoginAttempt.incrementBadLoginAttempts(user.foreign.map(_.provider).getOrElse(Constant.HostName), username.get)
+                      LoginAttempt.incrementBadLoginAttempts(user.foreign.map(_.provider).getOrElse(Constant.localIdentityProvider), username.get)
                       Empty
                       S.error(Helper.i18n("invalid.login.credentials"))
                 }
@@ -1151,7 +1151,7 @@ def restoreSomeSessions(): Unit = {
               case Empty => 
                 S.error(Helper.i18n("invalid.login.credentials"))
               case _ =>
-                LoginAttempt.incrementBadLoginAttempts(user.foreign.map(_.provider).getOrElse(Constant.HostName), usernameFromGui)
+                LoginAttempt.incrementBadLoginAttempts(user.foreign.map(_.provider).getOrElse(Constant.localIdentityProvider), usernameFromGui)
                 S.error(S.?(ErrorMessages.UnexpectedErrorDuringLogin)) // Note we hit this if user has not clicked email validation link
             }
         }
@@ -1478,7 +1478,7 @@ def restoreSomeSessions(): Unit = {
         Users.users.vend.getUserByUserId(userId) match {
           case Full(u) if u.name == name && u.emailAddress == email =>
             authUser.resetUniqueId().save
-            val resetLink = Constant.HostName+
+            val resetLink = Constant.localIdentityProvider+
               passwordResetPath.mkString("/", "/", "/")+urlEncode(authUser.getUniqueId())
             logger.warn(s"Password reset url is created for this user: $email")
             // TODO Notify via email appropriate persons 

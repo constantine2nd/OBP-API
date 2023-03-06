@@ -70,7 +70,7 @@ object APIMethods_AccountAccessApi extends RestHelper {
   },
   "Risk": {},
   "Links": {
-    "Self": "${Constant.HostName}/open-banking/v3.1/account-access-consents/CONSENT_ID",
+    "Self": "${Constant.localIdentityProvider}/open-banking/v3.1/account-access-consents/CONSENT_ID",
   },
   "Meta": {
     "TotalPages": 0,
@@ -118,7 +118,7 @@ object APIMethods_AccountAccessApi extends RestHelper {
           "TotalPages" : 0
         },
         "Links" : {
-          "Self" : "${Constant.HostName}/open-banking/v3.1/account-access-consents"
+          "Self" : "${Constant.localIdentityProvider}/open-banking/v3.1/account-access-consents"
         },
         "Risk" : "",
         "Data" : {
@@ -197,7 +197,7 @@ object APIMethods_AccountAccessApi extends RestHelper {
   },
   "Risk": "",
   "Links": {
-    "Self": "${Constant.HostName}/open-banking/v3.1/account-access-consents/CONSENT_ID",
+    "Self": "${Constant.localIdentityProvider}/open-banking/v3.1/account-access-consents/CONSENT_ID",
   },
   "Meta": {
     "TotalPages": 0,
@@ -229,7 +229,7 @@ object APIMethods_AccountAccessApi extends RestHelper {
                 },
                 "Risk": "",
                 "Links" : {
-                  "Self" : "${Constant.HostName}/open-banking/v3.1/account-access-consents/CONSENT_ID"
+                  "Self" : "${Constant.localIdentityProvider}/open-banking/v3.1/account-access-consents/CONSENT_ID"
                 },
                 "Data" : {
                   "Status" : "${consent.status}",

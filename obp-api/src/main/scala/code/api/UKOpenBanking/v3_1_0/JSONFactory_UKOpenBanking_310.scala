@@ -267,11 +267,11 @@ object JSONFactory_UKOpenBanking_310 extends CustomJsonFormats {
     AccountsUKV310(
       Data = AccountList(list),
       Links = LinksV310(
-        Self = Constant.HostName + "/open-banking/v3.1/accounts",
-        First = Constant.HostName + "/open-banking/v3.1/accounts",
-        Prev = Constant.HostName + "/open-banking/v3.1/accounts",
-        Next = Constant.HostName + "/open-banking/v3.1/accounts",
-        Last = Constant.HostName + "/open-banking/v3.1/accounts",
+        Self = Constant.localIdentityProvider + "/open-banking/v3.1/accounts",
+        First = Constant.localIdentityProvider + "/open-banking/v3.1/accounts",
+        Prev = Constant.localIdentityProvider + "/open-banking/v3.1/accounts",
+        Next = Constant.localIdentityProvider + "/open-banking/v3.1/accounts",
+        Last = Constant.localIdentityProvider + "/open-banking/v3.1/accounts",
       ),
       Meta = MetaUKV310(
         TotalPages = 1,
@@ -341,11 +341,11 @@ object JSONFactory_UKOpenBanking_310 extends CustomJsonFormats {
     TransactionsJsonUKV310(
       Data = TransactionsInnerJson(transactionsInnerJson),
       Links = LinksV310(
-        Constant.HostName + s"/open-banking/v3.1/accounts/${accountId}/transactions",
-        Constant.HostName + s"/open-banking/v3.1/accounts/${accountId}/transactions",
-        Constant.HostName + s"/open-banking/v3.1/accounts/${accountId}/transactions",
-        Constant.HostName + s"/open-banking/v3.1/accounts/${accountId}/transactions",
-        Constant.HostName + s"/open-banking/v3.1/accounts/${accountId}/transactions"
+        Constant.localIdentityProvider + s"/open-banking/v3.1/accounts/${accountId}/transactions",
+        Constant.localIdentityProvider + s"/open-banking/v3.1/accounts/${accountId}/transactions",
+        Constant.localIdentityProvider + s"/open-banking/v3.1/accounts/${accountId}/transactions",
+        Constant.localIdentityProvider + s"/open-banking/v3.1/accounts/${accountId}/transactions",
+        Constant.localIdentityProvider + s"/open-banking/v3.1/accounts/${accountId}/transactions"
       ),
       Meta = MetaInnerJson(
         TotalPages = 1,
@@ -414,11 +414,11 @@ object JSONFactory_UKOpenBanking_310 extends CustomJsonFormats {
     TransactionsJsonUKV310(
       Data = TransactionsInnerJson(transactionsInnerJson),
       Links = LinksV310(
-        Constant.HostName + s"/open-banking/v3.1/accounts/${accountId}/transactions",
-        Constant.HostName + s"/open-banking/v3.1/accounts/${accountId}/transactions",
-        Constant.HostName + s"/open-banking/v3.1/accounts/${accountId}/transactions",
-        Constant.HostName + s"/open-banking/v3.1/accounts/${accountId}/transactions",
-        Constant.HostName + s"/open-banking/v3.1/accounts/${accountId}/transactions"
+        Constant.localIdentityProvider + s"/open-banking/v3.1/accounts/${accountId}/transactions",
+        Constant.localIdentityProvider + s"/open-banking/v3.1/accounts/${accountId}/transactions",
+        Constant.localIdentityProvider + s"/open-banking/v3.1/accounts/${accountId}/transactions",
+        Constant.localIdentityProvider + s"/open-banking/v3.1/accounts/${accountId}/transactions",
+        Constant.localIdentityProvider + s"/open-banking/v3.1/accounts/${accountId}/transactions"
       ),
       Meta = MetaInnerJson(
         TotalPages = 1,
@@ -446,11 +446,11 @@ object JSONFactory_UKOpenBanking_310 extends CustomJsonFormats {
     AccountBalancesUKV310(
       Data = dataJson,
       Links = LinksV310(
-        s"${Constant.HostName}/open-banking/v3.1/accounts/${accountId}/balances",
-        s"${Constant.HostName}/open-banking/v3.1/accounts/${accountId}/balances",
-        s"${Constant.HostName}/open-banking/v3.1/accounts/${accountId}/balances",
-        s"${Constant.HostName}/open-banking/v3.1/accounts/${accountId}/balances",
-        s"${Constant.HostName}/open-banking/v3.1/accounts/${accountId}/balances"),
+        s"${Constant.localIdentityProvider}/open-banking/v3.1/accounts/${accountId}/balances",
+        s"${Constant.localIdentityProvider}/open-banking/v3.1/accounts/${accountId}/balances",
+        s"${Constant.localIdentityProvider}/open-banking/v3.1/accounts/${accountId}/balances",
+        s"${Constant.localIdentityProvider}/open-banking/v3.1/accounts/${accountId}/balances",
+        s"${Constant.localIdentityProvider}/open-banking/v3.1/accounts/${accountId}/balances"),
       Meta = MetaUKV310(
         0,
         new Date(),
@@ -477,11 +477,11 @@ object JSONFactory_UKOpenBanking_310 extends CustomJsonFormats {
     AccountBalancesUKV310(
       Data = dataJson,
       Links = LinksV310(
-        s"${Constant.HostName}/open-banking/v3.1/balances",
-        s"${Constant.HostName}/open-banking/v3.1/balances",
-        s"${Constant.HostName}/open-banking/v3.1/balances",
-        s"${Constant.HostName}/open-banking/v3.1/balances",
-        s"${Constant.HostName}/open-banking/v3.1/balances"),
+        s"${Constant.localIdentityProvider}/open-banking/v3.1/balances",
+        s"${Constant.localIdentityProvider}/open-banking/v3.1/balances",
+        s"${Constant.localIdentityProvider}/open-banking/v3.1/balances",
+        s"${Constant.localIdentityProvider}/open-banking/v3.1/balances",
+        s"${Constant.localIdentityProvider}/open-banking/v3.1/balances"),
       Meta = MetaUKV310(
         0,
         new Date(),

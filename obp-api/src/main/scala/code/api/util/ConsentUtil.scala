@@ -564,7 +564,7 @@ object Consent {
     val json = ConsentJWT(
       createdByUserId=user.userId,
       sub=APIUtil.generateUUID(),
-      iss=Constant.HostName,
+      iss=Constant.localIdentityProvider,
       aud=consumerId.getOrElse(currentConsumerId),
       jti=consentId,
       iat=currentTimeInSeconds,
@@ -635,7 +635,7 @@ object Consent {
       val json = ConsentJWT(
         createdByUserId = user.map(_.userId).getOrElse(""),
         sub = APIUtil.generateUUID(),
-        iss = Constant.HostName,
+        iss = Constant.localIdentityProvider,
         aud = consumerId.getOrElse(""),
         jti = consentId,
         iat = currentTimeInSeconds,
@@ -704,7 +704,7 @@ object Consent {
     val json = ConsentJWT(
       createdByUserId = createdByUserId,
       sub = APIUtil.generateUUID(),
-      iss = Constant.HostName,
+      iss = Constant.localIdentityProvider,
       aud = consumerId.getOrElse(currentConsumerId),
       jti = consentId,
       iat = currentTimeInSeconds,

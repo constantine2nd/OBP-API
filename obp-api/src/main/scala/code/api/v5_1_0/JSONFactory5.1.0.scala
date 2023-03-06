@@ -80,7 +80,7 @@ object JSONFactory510 {
       version_status = apiVersionStatus,
       git_commit = gitCommit,
       connector = connector,
-      hostname = Constant.HostName,
+      hostname = Constant.localIdentityProvider,
       stage = System.getProperty("run.mode"),
       local_identity_provider = Constant.localIdentityProvider,
       hosted_by = hostedBy,

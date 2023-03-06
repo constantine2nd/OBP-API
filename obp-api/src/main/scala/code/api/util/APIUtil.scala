@@ -665,7 +665,7 @@ object APIUtil extends MdcLoggable with CustomJsonFormats{
     val (code, responseHeaders) =
       message match {
         case msg if check401(msg) =>
-          val host = Constant.HostName
+          val host = Constant.localIdentityProvider
           val headerValue = s"""OAuth realm="$host", Bearer realm="$host", DirectLogin realm="$host""""
           val addHeader = List((ResponseHeader.`WWW-Authenticate`, headerValue))
           (401, getHeaders() ::: headers.list ::: addHeader)
@@ -2008,7 +2008,7 @@ object APIUtil extends MdcLoggable with CustomJsonFormats{
     val apiPathZeroFromRequest = crv.path.partPath(0)
     if (apiPathZeroFromRequest != ApiPathZero) throw new Exception("Configured ApiPathZero is not the same as the actual.")
 
-    val path = s"$HostName/$ApiPathZero"
+    val path = s"$localIdentityProvider/$ApiPathZero"
     path
   }
 

@@ -89,7 +89,7 @@ class WebUI extends MdcLoggable{
       val hyphenLocale = locale.replace("_", "-")
       if (supportedLocales.contains(locale) || supportedLocales.contains(hyphenLocale) ) {""} else {"none"}
     }
-    val page = Constant.HostName + S.uri
+    val page = Constant.localIdentityProvider + S.uri
     val language = I18NUtil.currentLocale().getLanguage()
 
     "#es a [href]" #> scala.xml.Unparsed(s"${page}?${replaceLocale("locale=es_ES")}") &
@@ -265,14 +265,14 @@ class WebUI extends MdcLoggable{
 
   // Link to API
   def apiLink: CssSel = {
-    val hostname = scala.xml.Unparsed(Constant.HostName)
+    val hostname = scala.xml.Unparsed(Constant.localIdentityProvider)
     ".api-link a *" #>  hostname &
     ".api-link a [href]" #> hostname
   }
 
   // Link to API Human
   def apiLinkHuman: CssSel = {
-    val hostname = scala.xml.Unparsed(Constant.HostName)
+    val hostname = scala.xml.Unparsed(Constant.localIdentityProvider)
       ".api-link a [href]" #> hostname
   }
 
@@ -472,8 +472,8 @@ class WebUI extends MdcLoggable{
   }
 
   def alreadyLoggedIn: CssSel = {
-    lazy val logoutLink = s" ${Constant.HostName}${AuthUser.logoutPath.foldLeft("")(_ + "/" + _)}"
-    lazy val loginLink = s" ${Constant.HostName}${AuthUser.loginPath.foldLeft("")(_ + "/" + _)}"
+    lazy val logoutLink = s" ${Constant.localIdentityProvider}${AuthUser.logoutPath.foldLeft("")(_ + "/" + _)}"
+    lazy val loginLink = s" ${Constant.localIdentityProvider}${AuthUser.loginPath.foldLeft("")(_ + "/" + _)}"
     "#logout_link [href]" #> scala.xml.Unparsed(s"$logoutLink?redirect=$loginLink")
   }
 

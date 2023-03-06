@@ -172,7 +172,7 @@ trait APIMethods400 {
     lazy val getLogoutLink: OBPEndpoint = {
       case "users" :: "current" :: "logout-link" :: Nil JsonGet _ => {
         cc => Future {
-            val link = code.api.Constant.HostName + AuthUser.logoutPath.foldLeft("")(_ + "/" + _)
+            val link = code.api.Constant.localIdentityProvider + AuthUser.logoutPath.foldLeft("")(_ + "/" + _)
             val logoutLink = LogoutLinkJson(link)
             (logoutLink, HttpCode.`200`(cc.callContext))
           }
@@ -3790,7 +3790,7 @@ trait APIMethods400 {
           } yield {
             val subject = getWebUiPropsValue("webui_developer_user_invitation_email_subject", "Welcome to the API Playground")
             val from = getWebUiPropsValue("webui_developer_user_invitation_email_from", "do-not-reply@openbankproject.com")
-            val link = s"${APIUtil.getPropsValue("portal_hostname",Constant.HostName)}/user-invitation?id=${invitation.secretKey}"
+            val link = s"${APIUtil.getPropsValue("portal_hostname",Constant.localIdentityProvider)}/user-invitation?id=${invitation.secretKey}"
             val customText = getWebUiPropsValue("webui_developer_user_invitation_email_text", WebUITemplate.webUiDeveloperUserInvitationEmailText)
             val customHtmlText = getWebUiPropsValue("webui_developer_user_invitation_email_html_text", WebUITemplate.webUiDeveloperUserInvitationEmailHtmlText)
               .replace(WebUIPlaceholder.emailRecipient, invitation.firstName)

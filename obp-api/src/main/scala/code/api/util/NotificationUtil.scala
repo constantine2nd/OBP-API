@@ -23,7 +23,7 @@ object NotificationUtil extends MdcLoggable {
     } yield {
       val bodyOfMessage : String = s"""Dear ${user.name},
                                       |
-                                      |You have been granted the entitlement to use ${entitlement.roleName} on ${Constant.HostName}
+                                      |You have been granted the entitlement to use ${entitlement.roleName} on ${Constant.localIdentityProvider}
                                       |
                                       |Cheers
                                       |""".stripMargin

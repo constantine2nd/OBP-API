@@ -92,7 +92,7 @@ trait DefaultUsers {
   lazy val tokenDuration = weeks(expiration)
   
   // Create resource user, need provider 
-  val defaultProvider = Constant.HostName
+  val defaultProvider = Constant.localIdentityProvider
   
   // create some resource user for test purposes
   lazy val resourceUser1 = UserX.findByProviderId(provider = defaultProvider, idGivenByProvider= resourceUser1Name).map(_.asInstanceOf[ResourceUser])

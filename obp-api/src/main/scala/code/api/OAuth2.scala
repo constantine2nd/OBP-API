@@ -26,19 +26,15 @@ TESOBE (http://www.tesobe.com/)
  */
 package code.api
 
-import java.net.URI
-import java.util
-
 import code.api.util.ErrorMessages._
 import code.api.util.{APIUtil, CallContext, JwtUtil}
 import code.consumer.Consumers
 import code.consumer.Consumers.consumers
 import code.loginattempts.LoginAttempt
 import code.model.Consumer
-import code.util.HydraUtil._
 import code.users.Users
 import code.util.Helper.MdcLoggable
-import com.nimbusds.jwt.JWTClaimsSet
+import code.util.HydraUtil._
 import com.nimbusds.openid.connect.sdk.claims.IDTokenClaimsSet
 import com.openbankproject.commons.ExecutionContext.Implicits.global
 import com.openbankproject.commons.model.User
@@ -46,10 +42,11 @@ import net.liftweb.common._
 import net.liftweb.http.rest.RestHelper
 import net.liftweb.util.Helpers
 import org.apache.commons.lang3.StringUtils
-import sh.ory.hydra.model.OAuth2TokenIntrospection
+import sh.ory.hydra.model.{IntrospectedOAuth2Token, JsonPatch, OAuth2Client}
 
+import java.net.URI
+import scala.collection.JavaConverters._
 import scala.concurrent.Future
-import scala.jdk.CollectionConverters.mapAsJavaMapConverter
 
 /**
 * This object provides the API calls necessary to third party applications
@@ -115,8 +112,8 @@ object OAuth2Login extends RestHelper with MdcLoggable {
     private def applyAccessTokenRules(value: String, cc: CallContext): (Box[User], Some[CallContext]) = {
       // In case of Hydra issued access tokens are not self-encoded/self-contained like JWT tokens are.
       // It implies the access token can be revoked at any time.
-      val introspectOAuth2Token: OAuth2TokenIntrospection = hydraAdmin.introspectOAuth2Token(value, null)
-      val hydraClient = hydraAdmin.getOAuth2Client(introspectOAuth2Token.getClientId())
+      val introspectOAuth2Token: IntrospectedOAuth2Token = hydraAdminOAuth2Api.introspectOAuth2Token(value, null)
+      val hydraClient = hydraAdminOAuth2Api.getOAuth2Client(introspectOAuth2Token.getClientId())
       var consumer: Box[Consumer] = consumers.vend.getConsumerByConsumerKey(introspectOAuth2Token.getClientId)
       logger.debug("introspectOAuth2Token.getIss: " + introspectOAuth2Token.getIss)
       logger.debug("introspectOAuth2Token.getActive: " + introspectOAuth2Token.getActive)
@@ -134,7 +131,7 @@ object OAuth2Login extends RestHelper with MdcLoggable {
         val errorMessage = Oauth2TokenEndpointAuthMethodForbidden + hydraClient.getTokenEndpointAuthMethod()
         return (Failure(errorMessage), Some(cc.copy(consumer = Failure(errorMessage))))
       }
-      
+
       // check access token binding with client certificate
       {
         if(consumer.isEmpty) {
@@ -152,16 +149,11 @@ object OAuth2Login extends RestHelper with MdcLoggable {
             consumer = Full(foundConsumer.saveMe())
             val clientId = foundConsumer.key.get
             // update hydra client client_certificate
-            val oAuth2Client = hydraAdmin.getOAuth2Client(clientId)
-            val clientMeta = oAuth2Client.getMetadata.asInstanceOf[java.util.Map[String, AnyRef]]
-            if(clientMeta == null) {
-              oAuth2Client.setMetadata(Map("client_certificate" -> cert).asJava)
-            } else {
-              clientMeta.put("client_certificate", cert)
-            }
-            // hydra update client endpoint have bug, So here delete and create to do update
-            hydraAdmin.deleteOAuth2Client(clientId)
-            hydraAdmin.createOAuth2Client(oAuth2Client)
+            val jsonPatch = new JsonPatch()
+            jsonPatch.setOp("replace")
+            jsonPatch.setPath("/metadata/client_certificate")
+            jsonPatch.setValue(cert)
+            hydraAdminOAuth2Api.patchOAuth2Client(clientId, List(jsonPatch).asJava)
           } else if(stringNotEq(certInConsumer, cert)) { 
             // Cannot match the value from PSD2-CERT header and the database value Consumer.clientCertificate
             logger.debug("Cert in Consumer: " + certInConsumer)

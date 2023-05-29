@@ -33,8 +33,8 @@ import code.util.HydraUtil.integrateWithHydra
 import code.webuiprops.MappedWebUiPropsProvider.getWebUiPropsValue
 import net.liftweb.http.{RequestVar, S, SHtml}
 import net.liftweb.util.Helpers._
-import sh.ory.hydra.api.AdminApi
-import sh.ory.hydra.model.{AcceptConsentRequest, RejectRequest}
+import sh.ory.hydra.api.OAuth2Api
+import sh.ory.hydra.model.{AcceptOAuth2ConsentRequest, RejectOAuth2Request}
 
 import scala.jdk.CollectionConverters.seqAsJavaListConverter
 
@@ -47,12 +47,12 @@ class ConsentScreen extends MdcLoggable {
   def submitAllowAction: Unit = {
     integrateWithHydra match {
       case true if !consentChallengeVar.isEmpty =>
-        val acceptConsentRequestBody = new AcceptConsentRequest
-        val adminApi: AdminApi = new AdminApi
+        val acceptConsentRequestBody = new AcceptOAuth2ConsentRequest()
+        val adminApi: OAuth2Api = new OAuth2Api()
         acceptConsentRequestBody.setRemember(skipConsentScreenVar.is)
         acceptConsentRequestBody.setRememberFor(0L)
         acceptConsentRequestBody.setGrantScope(List("openid").asJava)
-        val completedRequest = adminApi.acceptConsentRequest(consentChallengeVar.is, acceptConsentRequestBody)
+        val completedRequest = adminApi.acceptOAuth2ConsentRequest(consentChallengeVar.is, acceptConsentRequestBody)
         S.redirectTo(completedRequest.getRedirectTo)
       case false =>
         S.redirectTo("/") // Home page
@@ -62,11 +62,11 @@ class ConsentScreen extends MdcLoggable {
   def submitDenyAction: Unit = {
     integrateWithHydra match {
       case true if !consentChallengeVar.isEmpty =>
-        val rejectRequestBody = new RejectRequest
+        val rejectRequestBody = new RejectOAuth2Request()
         rejectRequestBody.setError("access_denied")
         rejectRequestBody.setErrorDescription("The resource owner denied the request")
-        val adminApi: AdminApi = new AdminApi
-        val completedRequest = adminApi.rejectConsentRequest(consentChallengeVar.is, rejectRequestBody)
+        val adminApi: OAuth2Api = new OAuth2Api()
+        val completedRequest = adminApi.rejectOAuth2ConsentRequest(consentChallengeVar.is, rejectRequestBody)
         S.redirectTo("/") // Home page
       case false =>
         S.redirectTo("/") // Home page

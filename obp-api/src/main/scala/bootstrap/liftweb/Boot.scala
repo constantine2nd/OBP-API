@@ -28,8 +28,7 @@ package bootstrap.liftweb
 
 import java.io.{File, FileInputStream}
 import java.util.stream.Collectors
-import java.util.{Locale, TimeZone}
-
+import java.util.{Locale, TimeZone, stream}
 import code.CustomerDependants.MappedCustomerDependant
 import code.DynamicData.DynamicData
 import code.DynamicEndpoint.DynamicEndpoint
@@ -126,6 +125,7 @@ import code.usercustomerlinks.MappedUserCustomerLink
 import code.userlocks.UserLocks
 import code.users._
 import code.util.Helper.MdcLoggable
+import code.util.HydraUtil.{grantTypes, hydraAdminOAuth2Api}
 import code.util.{Helper, HydraUtil}
 import code.validation.JsonSchemaValidation
 import code.views.Views
@@ -135,6 +135,7 @@ import code.webuiprops.WebUiProps
 import com.openbankproject.commons.model.ErrorMessage
 import com.openbankproject.commons.util.Functions.Implicits._
 import com.openbankproject.commons.util.{ApiVersion, Functions}
+
 import javax.mail.internet.MimeMessage
 import net.liftweb.common._
 import net.liftweb.db.DBLogEntry
@@ -148,7 +149,9 @@ import net.liftweb.sitemap._
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{DefaultConnectionIdentifier, Helpers, Props, Schedule, _}
 import org.apache.commons.io.FileUtils
+import sh.ory.hydra.model.{JsonPatch, OAuth2Client}
 
+import java.util
 import scala.concurrent.ExecutionContext
 
 /**
@@ -834,11 +837,10 @@ class Boot extends MdcLoggable {
   // create Hydra client if exists active consumer but missing Hydra client
   def createHydraClients() = {
     import scala.concurrent.ExecutionContext.Implicits.global
-    // exists hydra clients id
-    val oAuth2ClientIds = HydraUtil.hydraAdmin.listOAuth2Clients(Long.MaxValue, 0L).stream()
-      .map[String](_.getClientId)
-      .collect(Collectors.toSet())
-
+    // existing hydra clients id
+    import scala.collection.JavaConverters._
+    val oAuth2ClientIds = HydraUtil.hydraAdminOAuth2Api.listOAuth2Clients(null, null, null, null)
+      .asScala.map(_.getClientId)
     Consumers.consumers.vend.getConsumersFuture().foreach{ consumers =>
       consumers.filter(consumer => consumer.isActive.get && !oAuth2ClientIds.contains(consumer.key.get))
         .foreach(HydraUtil.createHydraClient(_))

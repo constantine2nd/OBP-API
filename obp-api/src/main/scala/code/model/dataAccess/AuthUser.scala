@@ -26,14 +26,14 @@ TESOBE (http://www.tesobe.com/)
   */
 package code.model.dataAccess
 
-import code.api.util.CommonFunctions.validUri
 import code.UserRefreshes.UserRefreshes
 import code.accountholders.AccountHolders
 import code.api.dynamic.endpoint.helper.DynamicEndpointHelper
 import code.api.util.APIUtil._
+import code.api.util.CommonFunctions.validUri
 import code.api.util.ErrorMessages._
 import code.api.util._
-import code.api.{APIFailure, Constant, DirectLogin, GatewayLogin, OAuthHandshake}
+import code.api._
 import code.bankconnectors.Connector
 import code.context.UserAuthContextProvider
 import code.entitlement.Entitlement
@@ -43,28 +43,24 @@ import code.token.TokensOpenIDConnect
 import code.users.{UserAgreementProvider, Users}
 import code.util.Helper
 import code.util.Helper.MdcLoggable
+import code.util.HydraUtil._
 import code.views.Views
+import code.webuiprops.MappedWebUiPropsProvider.getWebUiPropsValue
+import com.openbankproject.commons.ExecutionContext.Implicits.global
 import com.openbankproject.commons.model._
 import net.liftweb.common._
+import net.liftweb.http.S.fmapFunc
 import net.liftweb.http._
 import net.liftweb.mapper._
+import net.liftweb.sitemap.Loc.{If, LocParam, Template}
 import net.liftweb.util.Mailer.{BCC, From, Subject, To}
 import net.liftweb.util._
-
-import scala.collection.immutable.List
-import scala.xml.{Elem, NodeSeq, Text}
-import com.openbankproject.commons.ExecutionContext.Implicits.global
-import code.webuiprops.MappedWebUiPropsProvider.getWebUiPropsValue
 import org.apache.commons.lang3.StringUtils
-import code.util.HydraUtil._
-import com.github.dwickern.macros.NameOf.nameOf
-import sh.ory.hydra.model.AcceptLoginRequest
-import net.liftweb.http.S.fmapFunc
-import net.liftweb.sitemap.Loc.{If, LocParam, Template}
-import sh.ory.hydra.api.AdminApi
-import net.liftweb.sitemap.Loc.strToFailMsg
+import sh.ory.hydra.api.OAuth2Api
+import sh.ory.hydra.model.AcceptOAuth2LoginRequest
 
 import scala.concurrent.Future
+import scala.xml.{Elem, NodeSeq, Text}
 
 /**
  * An O-R mapped "User" class that includes first name, last name, password
@@ -1041,10 +1037,10 @@ def restoreSomeSessions(): Unit = {
           integrateWithHydra match {
             case true =>
               if (loginChallenge.isEmpty == false) {
-                val acceptLoginRequest = new AcceptLoginRequest
-                val adminApi: AdminApi = new AdminApi
+                val acceptLoginRequest = new AcceptOAuth2LoginRequest()
+                val adminApi: OAuth2Api = new OAuth2Api()
                 acceptLoginRequest.setSubject(user.username.get)
-                val result = adminApi.acceptLoginRequest(loginChallenge.getOrElse(""), acceptLoginRequest)
+                val result = adminApi.acceptOAuth2LoginRequest(loginChallenge.getOrElse(""), acceptLoginRequest)
                 S.redirectTo(result.getRedirectTo)
               } else {
                 S.redirectTo(redirect)

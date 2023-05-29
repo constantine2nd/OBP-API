@@ -25,8 +25,6 @@ TESOBE (http://www.tesobe.com/)
 
   */
 package code.model
-import java.util.{Collections, Date}
-
 import code.api.util.APIUtil
 import code.api.util.CommonFunctions.validUri
 import code.api.util.migration.Migration.DbFunction
@@ -37,22 +35,20 @@ import code.nonce.NoncesProvider
 import code.token.TokensProvider
 import code.users.Users
 import code.util.Helper.MdcLoggable
-import code.util.HydraUtil
 import code.util.HydraUtil._
-import code.views.system.{AccountAccess, ViewDefinition}
 import com.github.dwickern.macros.NameOf
 import com.openbankproject.commons.ExecutionContext.Implicits.global
-import com.openbankproject.commons.model.{BankIdAccountId, User, View}
 import net.liftweb.common._
 import net.liftweb.http.S
-import net.liftweb.mapper.{LongKeyedMetaMapper, _}
-import net.liftweb.util.Helpers.{now, _}
+import net.liftweb.mapper._
+import net.liftweb.util.Helpers._
 import net.liftweb.util.{FieldError, Helpers}
 import org.apache.commons.lang3.StringUtils
+import sh.ory.hydra.model.JsonPatch
 
-import scala.collection.immutable.List
+import java.util.Date
+import scala.collection.JavaConverters._
 import scala.concurrent.Future
-
 
 sealed trait AppType
 object AppType {
@@ -201,7 +197,7 @@ object MappedConsumersProvider extends ConsumersProvider with MdcLoggable {
   }
 
   def deleteConsumer(consumer: Consumer): Boolean = {
-    if(integrateWithHydra) hydraAdmin.deleteOAuth2Client(consumer.key.get)
+    if(integrateWithHydra) hydraAdminOAuth2Api.deleteOAuth2Client(consumer.key.get)
     Consumer.delete_!(consumer)
   }
 
@@ -262,24 +258,30 @@ object MappedConsumersProvider extends ConsumersProvider with MdcLoggable {
         val updatedConsumer = c.saveMe()
 
         // In case we use Hydra ORY as Identity Provider we update corresponding client at Hydra side a well
-        if(integrateWithHydra && isActive.isDefined) {
+        if(integrateWithHydra && Option(originIsActive) != isActive && isActive.isDefined) {
           val clientId = c.key.get
-          val existsOAuth2Client = Box.tryo(hydraAdmin.getOAuth2Client(clientId))
+          val existsOAuth2Client = Box.tryo(hydraAdminOAuth2Api.getOAuth2Client(clientId))
             .filter(null !=)
-          // TODO Involve Hydra ORY version with working update mechanism
           if (isActive == Some(false) && existsOAuth2Client.isDefined) {
               existsOAuth2Client
               .map { oAuth2Client =>
-                oAuth2Client.setClientSecretExpiresAt(System.currentTimeMillis())
-                hydraAdmin.updateOAuth2Client(clientId, oAuth2Client)
+                val jsonPatch = new JsonPatch()
+                jsonPatch.setOp("replace")
+                jsonPatch.setPath("/grant_types")
+                jsonPatch.setValue(Nil.asJava)
+                hydraAdminOAuth2Api.patchOAuth2Client(clientId, List(jsonPatch).asJava)
               }
-          }
-          if(isActive == Some(true) && existsOAuth2Client.isDefined) {
+          } else if(isActive == Some(true) && existsOAuth2Client.isDefined) {
             existsOAuth2Client
               .map { oAuth2Client =>
-                oAuth2Client.setClientSecretExpiresAt(0L)
-                hydraAdmin.updateOAuth2Client(clientId, oAuth2Client)
+                val jsonPatch = new JsonPatch()
+                jsonPatch.setOp("replace")
+                jsonPatch.setPath("/grant_types")
+                jsonPatch.setValue(grantTypes)
+                hydraAdminOAuth2Api.patchOAuth2Client(clientId, List(jsonPatch).asJava)
               }
+          } else if(isActive == Some(true)) {
+            createHydraClient(updatedConsumer)
           }
         }
 

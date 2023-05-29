@@ -2,7 +2,6 @@ package code.api.util
 
 import java.text.SimpleDateFormat
 import java.util.{Date, UUID}
-
 import code.api.berlin.group.v1_3.JSONFactory_BERLIN_GROUP_1_3.{ConsentAccessJson, PostConsentJson}
 import code.api.v3_1_0.{PostConsentBodyCommonJson, PostConsentEntitlementJsonV310, PostConsentViewJsonV310}
 import code.api.{Constant, RequestHeader}
@@ -25,7 +24,7 @@ import net.liftweb.json.JsonParser.ParseException
 import net.liftweb.json.{Extraction, MappingException, compactRender, parse}
 import net.liftweb.mapper.By
 import net.liftweb.util.ControlHelpers
-import sh.ory.hydra.model.OAuth2TokenIntrospection
+import sh.ory.hydra.model.{IntrospectedOAuth2Token}
 
 import scala.collection.immutable.{List, Nil}
 import scala.concurrent.Future
@@ -746,7 +745,7 @@ object Consent {
       val accessToken = calContext.flatMap(_.authReqHeaderField)
         .map(_.replaceFirst("Bearer\\s+", ""))
         .getOrElse(throw new RuntimeException("Not found http request header 'Authorization', it is mandatory."))
-    val introspectOAuth2Token: OAuth2TokenIntrospection = HydraUtil.hydraAdmin.introspectOAuth2Token(accessToken, null)
+    val introspectOAuth2Token: IntrospectedOAuth2Token = HydraUtil.hydraAdminOAuth2Api.introspectOAuth2Token(accessToken, null)
     if(!introspectOAuth2Token.getActive) {
       return Failure(ErrorMessages.ConsentExpiredIssue)
     }

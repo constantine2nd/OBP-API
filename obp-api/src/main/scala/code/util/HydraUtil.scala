@@ -1,20 +1,18 @@
 package code.util
 
-import java.util.UUID
-
 import code.api.util.APIUtil
 import code.model.Consumer
 import code.model.Consumer.redirectURLRegex
 import code.util.Helper.MdcLoggable
-import com.nimbusds.jose.jwk.gen.{ECKeyGenerator, JWKGenerator, RSAKeyGenerator}
-import com.nimbusds.jose.jwk.{AsymmetricJWK, Curve, ECKey, JWK, KeyUse, RSAKey}
+import com.nimbusds.jose.jwk.gen.{ECKeyGenerator, RSAKeyGenerator}
+import com.nimbusds.jose.jwk.{Curve, JWK, KeyUse}
 import com.nimbusds.jose.{Algorithm, JWSAlgorithm}
 import org.apache.commons.lang3.StringUtils
-import sh.ory.hydra.api.{AdminApi, PublicApi}
+import sh.ory.hydra.api.OAuth2Api
 import sh.ory.hydra.model.OAuth2Client
 import sh.ory.hydra.{ApiClient, Configuration}
 
-import scala.collection.immutable.List
+import java.util.UUID
 import scala.jdk.CollectionConverters.{mapAsJavaMapConverter, seqAsJavaListConverter}
 
 object HydraUtil extends MdcLoggable{
@@ -49,20 +47,20 @@ object HydraUtil extends MdcLoggable{
 
   val grantTypes = ("authorization_code" :: "client_credentials" :: "refresh_token" :: "implicit" :: Nil).asJava
 
-  lazy val hydraAdmin = {
+  lazy val hydraAdminOAuth2Api = {
     val hydraAdminUrl = APIUtil.getPropsValue("hydra_admin_url")
       .openOrThrowException(s"If props $INTEGRATE_WITH_HYDRA is true, hydra_admin_url value should not be blank")
     val defaultClient = Configuration.getDefaultApiClient
     defaultClient.setBasePath(hydraAdminUrl)
-    new AdminApi(defaultClient)
+    new OAuth2Api(defaultClient)
   }
 
-  lazy val hydraPublic = {
+  lazy val hydraPublicOAuth2Api = {
     val hydraPublicUrl = APIUtil.getPropsValue("hydra_public_url")
       .openOrThrowException(s"If props $INTEGRATE_WITH_HYDRA is true, hydra_public_url value should not be blank")
     val apiClient = new ApiClient
     apiClient.setBasePath(hydraPublicUrl)
-    new PublicApi(apiClient)
+    new OAuth2Api(apiClient)
   }
 
 
@@ -102,7 +100,7 @@ object HydraUtil extends MdcLoggable{
     oAuth2Client.setTokenEndpointAuthMethod(HydraUtil.hydraTokenEndpointAuthMethod)
 
     val decoratedClient = fun(oAuth2Client)
-    val oAuth2ClientResult = Some(hydraAdmin.createOAuth2Client(decoratedClient))
+    val oAuth2ClientResult = Some(hydraAdminOAuth2Api.createOAuth2Client(decoratedClient))
     logger.info("createHydraClient process is successful.")
     oAuth2ClientResult
   }

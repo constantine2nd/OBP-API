@@ -135,8 +135,9 @@ class ConsumerRegistration extends MdcLoggable {
       val jwsAlg = signingAlgVar.is
       var jwkPrivateKey: String = s"Please change this value to ${if(StringUtils.isNotBlank(jwksUri)) "jwks_uri" else "jwks"} corresponding private key"
       // In case we use Hydra ORY as Identity Provider we create corresponding client at Hydra side a well
-      if(HydraUtil.integrateWithHydra) {
-        HydraUtil.createHydraClient(consumer, oAuth2Client => {
+      val updatedConsumer =
+        if(HydraUtil.integrateWithHydra) {
+          HydraUtil.createHydraClient(consumer, oAuth2Client => {
           val signingAlg = signingAlgVar.is
 
           if(oidcCheckboxVar.is == false) {
@@ -174,26 +175,37 @@ class ConsumerRegistration extends MdcLoggable {
             oAuth2Client.setRequestUris(List(requestUri).asJava)
           }
           oAuth2Client
-        })
+        }).map { hydraClient =>
+          // Create client at Hydra ORA side and update our consumer with a new Client ID
+          Consumers.consumers.vend
+            .updateConsumer(consumer.id.get, Some(hydraClient.getClientId), None, None, None, None, None, None, None, None)
+            .getOrElse {
+              consumer
+            }
+        }.getOrElse {
+            consumer
+          }
+      } else {
+        consumer
       }
       val registerConsumerSuccessMessageWebpage = getWebUiPropsValue(
         "webui_register_consumer_success_message_webpage", 
         "Thanks for registering your consumer with the Open Bank Project API! Here is your developer information. Please save it in a secure location.")
       //thanks for registering, here's your key, etc.
       "#register-consumer-success-message *" #> registerConsumerSuccessMessageWebpage &
-      "#app-consumer_id *" #> consumer.consumerId.get &
-      "#app-name *" #> consumer.name.get &
-      "#app-redirect-url *" #> consumer.redirectURL &
-      "#app-user-authentication-url *" #> consumer.userAuthenticationURL &
-      "#app-type *" #> consumer.appType.get &
-      "#app-description *" #> consumer.description.get &
+      "#app-consumer_id *" #> updatedConsumer.consumerId.get &
+      "#app-name *" #> updatedConsumer.name.get &
+      "#app-redirect-url *" #> updatedConsumer.redirectURL &
+      "#app-user-authentication-url *" #> updatedConsumer.userAuthenticationURL &
+      "#app-type *" #> updatedConsumer.appType.get &
+      "#app-description *" #> updatedConsumer.description.get &
       "#client_certificate *" #> {
-        if (StringUtils.isBlank(consumer.clientCertificate.get)) Text("None")
-        else Unparsed(consumer.clientCertificate.get)
+        if (StringUtils.isBlank(updatedConsumer.clientCertificate.get)) Text("None")
+        else Unparsed(updatedConsumer.clientCertificate.get)
       } &
-      "#app-developer *" #> consumer.developerEmail.get &
-      "#auth-key *" #> consumer.key.get &
-      "#secret-key *" #> consumer.secret.get &
+      "#app-developer *" #> updatedConsumer.developerEmail.get &
+      "#auth-key *" #> updatedConsumer.key.get &
+      "#secret-key *" #> updatedConsumer.secret.get &
       "#oauth-endpoint a *" #> urlOAuthEndpoint &
       "#oauth-endpoint a [href]" #> urlOAuthEndpoint &
       "#directlogin-endpoint a *" #> urlDirectLoginEndpoint &
@@ -203,8 +215,8 @@ class ConsumerRegistration extends MdcLoggable {
         if(HydraUtil.integrateWithHydra) {
           "#hydra-client-info-title *" #>"OAuth2: " &
           "#admin_url *" #> HydraUtil.hydraAdminUrl &
-            "#client_id *" #> {consumer.key.get} &
-            "#redirect_uri *" #> consumer.redirectURL.get &
+            "#client_id *" #> {updatedConsumer.key.get} &
+            "#redirect_uri *" #> updatedConsumer.redirectURL.get &
             {
                 val requestUri = requestUriVar.is
                 if(StringUtils.isBlank(requestUri)) "#oauth2_request_uri *" #> ""
@@ -234,7 +246,7 @@ class ConsumerRegistration extends MdcLoggable {
         val hasDummyUsers = getWebUiPropsValue("webui_dummy_user_logins", "").nonEmpty
         val isShowDummyUserTokens = getWebUiPropsValue("webui_show_dummy_user_tokens", "false").toBoolean
         if(hasDummyUsers && isShowDummyUserTokens) {
-          "#create-directlogin a [href]" #> s"dummy-user-tokens?consumer_key=${consumer.key.get}"
+          "#create-directlogin a [href]" #> s"dummy-user-tokens?consumer_key=${updatedConsumer.key.get}"
         } else {
           "#dummy-user-tokens" #> ""
         }

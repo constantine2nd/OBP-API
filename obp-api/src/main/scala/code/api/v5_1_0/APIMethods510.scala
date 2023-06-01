@@ -1,22 +1,19 @@
 package code.api.v5_1_0
 
 
-import java.io
-
-import code.api.ResourceDocs1_4_0.SwaggerDefinitionsJSON.{apiCollectionJson400, apiCollectionsJson400, apiInfoJson400, postApiCollectionJson400, revokedConsentJsonV310}
-import code.api.ResourceDocs1_4_0.SwaggerDefinitionsJSON._
+import code.api.ResourceDocs1_4_0.SwaggerDefinitionsJSON.{apiCollectionJson400, apiCollectionsJson400, apiInfoJson400, postApiCollectionJson400, revokedConsentJsonV310, _}
 import code.api.util.APIUtil._
 import code.api.util.ApiRole._
 import code.api.util.ApiTag._
 import code.api.util.ErrorMessages.{$UserNotLoggedIn, BankNotFound, ConsentNotFound, InvalidJsonFormat, UnknownError, UserNotFoundByUserId, UserNotLoggedIn, _}
-import code.api.util.{APIUtil, ApiRole, CallContext, CurrencyUtil, NewStyle, X509}
 import code.api.util.NewStyle.HttpCode
-import code.api.v3_0_0.JSONFactory300
+import code.api.util._
 import code.api.v3_0_0.JSONFactory300.createAggregateMetricJson
 import code.api.v3_1_0.ConsentJsonV310
 import code.api.v3_1_0.JSONFactory310.createBadLoginStatusJson
 import code.api.v4_0_0.{JSONFactory400, PostApiCollectionJson400}
 import code.atmattribute.AtmAttribute
+import code.bankconnectors.Connector
 import code.consent.Consents
 import code.loginattempts.LoginAttempt
 import code.metrics.APIMetrics
@@ -28,12 +25,11 @@ import code.util.Helper
 import code.views.system.{AccountAccess, ViewDefinition}
 import com.github.dwickern.macros.NameOf.nameOf
 import com.openbankproject.commons.ExecutionContext.Implicits.global
+import com.openbankproject.commons.model.enums.{AtmAttributeType, UserAttributeType}
 import com.openbankproject.commons.model.{AtmId, AtmT, BankId}
-import com.openbankproject.commons.model.enums.AtmAttributeType
 import com.openbankproject.commons.util.{ApiVersion, ScannedApiVersion}
 import net.liftweb.common.Full
 import net.liftweb.http.S
-import net.liftweb.http.provider.HTTPParam
 import net.liftweb.http.rest.RestHelper
 import net.liftweb.mapper.By
 import net.liftweb.util.Helpers.tryo
@@ -152,7 +148,139 @@ trait APIMethods510 {
             (JSONFactory400.createApiCollectionsJsonV400(apiCollections), HttpCode.`200`(callContext))
           }
       }
-    }   
+    }
+    staticResourceDocs += ResourceDoc(
+      createNonPersonalUserAttribute,
+      implementedInApiVersion,
+      nameOf(createNonPersonalUserAttribute),
+      "POST",
+      "/users/USER_ID/non-personal/attributes",
+      "Create Non Personal User Attribute",
+      s""" Create Non Personal User Attribute
+         |
+         |The type field must be one of "STRING", "INTEGER", "DOUBLE" or DATE_WITH_DAY"
+         |
+         |${authenticationRequiredMessage(true)}
+         |
+         |""",
+      userAttributeJsonV510,
+      userAttributeResponseJsonV510,
+      List(
+        $UserNotLoggedIn,
+        UserHasMissingRoles,
+        InvalidJsonFormat,
+        UnknownError
+      ),
+      List(apiTagUser),
+      Some(List(canCreateNonPersonalUserAttribute))
+    )
+
+    lazy val createNonPersonalUserAttribute: OBPEndpoint = {
+      case "users" :: userId ::"non-personal":: "attributes" :: Nil JsonPost json -> _ => {
+        cc =>
+          val failMsg = s"$InvalidJsonFormat The Json body should be the $UserAttributeJsonV510 "
+          for {
+            (user, callContext) <- NewStyle.function.getUserByUserId(userId, cc.callContext)
+            postedData <- NewStyle.function.tryons(failMsg, 400, callContext) {
+              json.extract[UserAttributeJsonV510]
+            }
+            failMsg = s"$InvalidJsonFormat The `Type` field can only accept the following field: " +
+              s"${UserAttributeType.DOUBLE}(12.1234), ${UserAttributeType.STRING}(TAX_NUMBER), ${UserAttributeType.INTEGER} (123)and ${UserAttributeType.DATE_WITH_DAY}(2012-04-23)"
+            userAttributeType <- NewStyle.function.tryons(failMsg, 400, callContext) {
+              UserAttributeType.withName(postedData.`type`)
+            }
+            (userAttribute, callContext) <- NewStyle.function.createOrUpdateUserAttribute(
+              user.userId,
+              None,
+              postedData.name,
+              userAttributeType,
+              postedData.value,
+              false,
+              callContext
+              )
+          } yield {
+            (JSONFactory510.createUserAttributeJson(userAttribute), HttpCode.`201`(callContext))
+          }
+      }
+    }
+    
+    resourceDocs += ResourceDoc(
+      deleteNonPersonalUserAttribute,
+      implementedInApiVersion,
+      nameOf(deleteNonPersonalUserAttribute),
+      "DELETE",
+      "/users/USER_ID/non-personal/attributes/USER_ATTRIBUTE_ID",
+      "Delete Non Personal User Attribute",
+      s"""Delete the Non Personal User Attribute specified by ENTITLEMENT_REQUEST_ID for a user specified by USER_ID
+         |
+         |${authenticationRequiredMessage(true)}
+         |""".stripMargin,
+      EmptyBody,
+      EmptyBody,
+      List(
+        UserNotLoggedIn,
+        UserHasMissingRoles,
+        InvalidConnectorResponse,
+        UnknownError
+      ),
+      List(apiTagUser),
+      Some(List(canDeleteNonPersonalUserAttribute)))
+
+    lazy val deleteNonPersonalUserAttribute: OBPEndpoint = {
+      case "users" :: userId :: "non-personal" :: "attributes" :: userAttributeId :: Nil JsonDelete _ => {
+        cc =>
+          for {
+            (_, callContext) <- authenticatedAccess(cc)
+            (_, callContext) <- NewStyle.function.getUserByUserId(userId, callContext)
+            (deleted,callContext) <- Connector.connector.vend.deleteUserAttribute(
+              userAttributeId: String,
+              callContext: Option[CallContext]
+            ) map {
+            i => (connectorEmptyResponse (i._1, callContext), i._2)
+          }
+          } yield {
+            (Full(deleted), HttpCode.`204`(callContext))
+          }
+      }
+    }
+    
+    resourceDocs += ResourceDoc(
+      getNonPersonalUserAttributes,
+      implementedInApiVersion,
+      nameOf(getNonPersonalUserAttributes),
+      "GET",
+      "/users/USER_ID/non-personal/attributes",
+      "Get Non Personal User Attributes",
+      s"""Get Non Personal User Attribute for a user specified by USER_ID
+         |
+         |${authenticationRequiredMessage(true)}
+         |""".stripMargin,
+      EmptyBody,
+      EmptyBody,
+      List(
+        UserNotLoggedIn,
+        UserHasMissingRoles,
+        InvalidConnectorResponse,
+        UnknownError
+      ),
+      List(apiTagUser),
+      Some(List(canGetNonPersonalUserAttributes)))
+
+    lazy val getNonPersonalUserAttributes: OBPEndpoint = {
+      case "users" :: userId :: "non-personal" ::"attributes" :: Nil JsonGet _ => {
+        cc =>
+          for {
+            (_, callContext) <- authenticatedAccess(cc)
+            (user, callContext) <- NewStyle.function.getUserByUserId(userId, callContext)
+            (userAttributes,callContext) <- NewStyle.function.getNonPersonalUserAttributes(
+              user.userId,
+              callContext,
+            ) 
+          } yield {
+            (JSONFactory510.createUserAttributesJson(userAttributes), HttpCode.`200`(callContext))
+          }
+      }
+    }
     
     
     staticResourceDocs += ResourceDoc(

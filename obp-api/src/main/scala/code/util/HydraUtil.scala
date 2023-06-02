@@ -99,6 +99,10 @@ object HydraUtil extends MdcLoggable{
     // Consumer.AppType = Public => private_key_jwt
     // Consumer.AppType = Unknown => private_key_jwt
     oAuth2Client.setTokenEndpointAuthMethod(HydraUtil.hydraTokenEndpointAuthMethod)
+    
+    // In order to avoid:
+    // java.lang.IllegalArgumentException: Expected the field `contacts` to be an array in the JSON string but got `null`
+    oAuth2Client.contacts(Nil.asJava)
 
     val decoratedClient = fun(oAuth2Client)
     val oAuth2ClientResult = Some(hydraAdminOAuth2Api.createOAuth2Client(decoratedClient))

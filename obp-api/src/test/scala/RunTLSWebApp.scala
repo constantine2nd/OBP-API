@@ -35,6 +35,7 @@ import code.setup.PropsProgrammatically
 import net.liftweb.http.LiftRules
 import net.liftweb.http.provider.HTTPContext
 import org.apache.commons.codec.binary.Base64
+import org.eclipse.jetty.http.{HttpFields, HttpVersion}
 import org.eclipse.jetty.server._
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.webapp.WebAppContext
@@ -67,7 +68,7 @@ object RunTLSWebApp extends App with PropsProgrammatically {
   // add client certificate to request header
   def customizer(connector: Connector, channelConfig: HttpConfiguration, request: Request): Unit = {
     val clientCertificate = request.getAttribute("javax.servlet.request.X509Certificate").asInstanceOf[Array[X509Certificate]]
-    val httpFields = request.getHttpFields
+    val httpFields: HttpFields.Mutable = HttpFields.build(request.getHttpFields())
     if (clientCertificate != null && httpFields != null) {
       val encoder = new Base64(64)
       val content = new String(
@@ -91,7 +92,7 @@ object RunTLSWebApp extends App with PropsProgrammatically {
     // RESET HEADER
     https.addCustomizer(customizer)
 
-    val sslContextFactory = new SslContextFactory()
+    val sslContextFactory = new SslContextFactory.Server
     sslContextFactory.setKeyStorePath(this.getClass.getResource("/cert/server.jks").toExternalForm)
     sslContextFactory.setKeyStorePassword("123456")
 
@@ -99,11 +100,11 @@ object RunTLSWebApp extends App with PropsProgrammatically {
     sslContextFactory.setTrustStorePassword("123456")
     // We do not want that client must present certificate
     // i.e. you can use browser without importing the certificate
-    sslContextFactory.setNeedClientAuth(false)
+    sslContextFactory.setTrustAll(true)
 
     sslContextFactory.setProtocol("TLSv1.2")
 
-    val connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, "http/1.1"), new HttpConnectionFactory(https))
+    val connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()), new HttpConnectionFactory(https))
     connector.setPort(8080)
 
     Array(connector)

@@ -79,21 +79,21 @@ trait CustomProtoDBVendor extends ConnectionManager {
   // Tail Recursive function in order to avoid Stack Overflow
   // PLEASE NOTE: Changing this function you can break the above named feature
   def newConnection(name: ConnectionIdentifier): Box[Connection] = {
-    val (connection: Box[Connection], error: Box[String]) = commonPart(name)
-    error.isEmpty match {
-      case true => connection
-      case false => newConnection(name)
+    val (connection: Box[Connection], error: Boolean) = commonPart(name)
+    error match {
+      case false => connection
+      case true => newConnection(name)
     }
   }
   
-  def commonPart(name: ConnectionIdentifier): (Box[Connection], Box[String]) = synchronized {
-   val (connection: Box[Connection], error: Box[String]) = pool match {
+  def commonPart(name: ConnectionIdentifier): (Box[Connection], Boolean) = synchronized {
+   val (connection: Box[Connection], error: Boolean) = pool match {
       case Nil if poolSize < tempMaxSize =>
         val ret = createOne
         ret.foreach(_.setAutoCommit(false))
         poolSize = poolSize + 1
         logger.debug("Created new pool entry. name=%s, poolSize=%d".format(name, poolSize))
-        (ret, Empty)
+        (ret, false)
 
       case Nil =>
         val curSize = poolSize
@@ -104,22 +104,22 @@ trait CustomProtoDBVendor extends ConnectionManager {
           tempMaxSize += 1
           logger.debug("Temporarily expanding pool. name=%s, tempMaxSize=%d".format(name, tempMaxSize))
         }
-        (Empty, Failure("Pool is empty"))
+        (Empty, true)
 
       case x :: xs =>
         logger.trace("Found connection in pool, name=%s".format(name))
         pool = xs
         try {
           this.testConnection(x)
-          (Full(x), Empty)
+          (Full(x), false)
         } catch {
           case e: Exception => try {
             logger.debug("Test connection failed, removing connection from pool, name=%s".format(name))
             poolSize = poolSize - 1
             tryo(x.close)
-            (Empty, Failure(e.getMessage))
+            (Empty, true)
           } catch {
-            case e: Exception => (Empty, Failure(e.getMessage))
+            case e: Exception => (Empty, true)
           }
         }
     }

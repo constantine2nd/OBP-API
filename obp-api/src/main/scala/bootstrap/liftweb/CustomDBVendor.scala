@@ -104,7 +104,10 @@ trait CustomProtoDBVendor extends ConnectionManager {
           tempMaxSize += 1
           logger.debug("Temporarily expanding pool. name=%s, tempMaxSize=%d".format(name, tempMaxSize))
         }
-        (Empty, Failure("Pool is empty"))
+        (
+          Failure("Database may be down, please check database connection! OBP already create $tempMaxSize connections, because all connections are occupied!"), 
+          Failure("Pool is empty")
+        )
 
       case x :: xs =>
         logger.trace("Found connection in pool, name=%s".format(name))
@@ -117,9 +120,9 @@ trait CustomProtoDBVendor extends ConnectionManager {
             logger.debug("Test connection failed, removing connection from pool, name=%s".format(name))
             poolSize = poolSize - 1
             tryo(x.close)
-            (Empty, Failure(e.getMessage))
+            (Empty, Empty)
           } catch {
-            case e: Exception => (Empty, Failure(e.getMessage))
+            case e: Exception => (Empty, Empty)
           }
         }
     }
@@ -153,4 +156,14 @@ trait CustomProtoDBVendor extends ConnectionManager {
       _closeAllConnections_!(cnt + 1)
     }
   }
+}
+
+
+object myApp extends App{
+  val abc= Failure("12312")
+  if (abc.isEmpty){
+    println(1)
+  }else
+    println(2)
+    
 }

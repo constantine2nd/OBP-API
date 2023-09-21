@@ -2,7 +2,7 @@ package bootstrap.liftweb
 
 import java.sql.{Connection, DriverManager}
 
-import net.liftweb.common.{Box, Failure, Full, Logger}
+import net.liftweb.common.{Box, Empty, Failure, Full, Logger}
 import net.liftweb.db.ConnectionManager
 import net.liftweb.util.ConnectionIdentifier
 import net.liftweb.util.Helpers.tryo
@@ -47,15 +47,15 @@ trait CustomProtoDBVendor extends ConnectionManager {
 
   /**
    *  Override this method if you want something other than
-   * 4 connections in the pool
+   * 20 connections in the pool
    */
-  protected def maxPoolSize = 4
+  protected def maxPoolSize = 20
 
   /**
    * The absolute maximum that this pool can extend to
-   * The default is 20.  Override this method to change.
+   * The default is 40.  Override this method to change.
    */
-  protected def doNotExpandBeyond = 20
+  protected def doNotExpandBeyond = 30
 
   /**
    * The logic for whether we can expand the pool beyond the current size.  By
@@ -76,48 +76,55 @@ trait CustomProtoDBVendor extends ConnectionManager {
     conn.setAutoCommit(false)
   }
 
-  def newConnection(name: ConnectionIdentifier): Box[Connection] =
-    synchronized {
-      pool match {
-        case Nil if poolSize < tempMaxSize =>
-          val ret = createOne
-          ret.foreach(_.setAutoCommit(false))
-          poolSize = poolSize + 1
-          logger.debug("Created new pool entry. name=%s, poolSize=%d".format(name, poolSize))
-          ret
-
-        case Nil =>
-          val curSize = poolSize
-          logger.trace("No connection left in pool, waiting...")
-          wait(50L*poolSize )
-          // if we've waited 50 ms and the pool is still empty, temporarily expand it
-          if (pool.isEmpty && poolSize == curSize && canExpand_?) {
-            tempMaxSize += 1
-            logger.debug("Temporarily expanding pool. name=%s, tempMaxSize=%d".format(name, tempMaxSize))
-            newConnection(name)
-          }else{
-            logger.error(s"The poolSize is expanding to tempMaxSize ($tempMaxSize), we can not create new connection, need to restart OBP now.")
-            Failure(s"Database may be down, please check database connection! OBP already create $tempMaxSize connections, because all connections are occupied!")
-          }
-
-        case x :: xs =>
-          logger.trace("Found connection in pool, name=%s".format(name))
-          pool = xs
-          try {
-            this.testConnection(x)
-            Full(x)
-          } catch {
-            case e: Exception => try {
-              logger.debug("Test connection failed, removing connection from pool, name=%s".format(name))
-              poolSize = poolSize - 1
-              tryo(x.close)
-              newConnection(name)
-            } catch {
-              case e: Exception => newConnection(name)
-            }
-          }
-      }
+  // Tail Recursive function in order to avoid Stack Overflow
+  // PLEASE NOTE: Changing tis function you can break the above named feature
+  def newConnection(name: ConnectionIdentifier): Box[Connection] = {
+    val (connection: Box[Connection], error: Box[String]) = commonPart(name)
+    error.isEmpty match {
+      case true => connection
+      case false => newConnection(name)
     }
+  }
+  
+  def commonPart(name: ConnectionIdentifier): (Box[Connection], Box[String]) = synchronized {
+   val (connection: Box[Connection], error: Box[String]) = pool match {
+      case Nil if poolSize < tempMaxSize =>
+        val ret = createOne
+        ret.foreach(_.setAutoCommit(false))
+        poolSize = poolSize + 1
+        logger.debug("Created new pool entry. name=%s, poolSize=%d".format(name, poolSize))
+        (ret, Empty)
+
+      case Nil =>
+        val curSize = poolSize
+        logger.trace("No connection left in pool, waiting...")
+        wait(50L)
+        // if we've waited 50 ms and the pool is still empty, temporarily expand it
+        if (pool.isEmpty && poolSize == curSize && canExpand_?) {
+          tempMaxSize += 1
+          logger.debug("Temporarily expanding pool. name=%s, tempMaxSize=%d".format(name, tempMaxSize))
+        }
+        (Empty, Failure("Pool is empty"))
+
+      case x :: xs =>
+        logger.trace("Found connection in pool, name=%s".format(name))
+        pool = xs
+        try {
+          this.testConnection(x)
+          (Full(x), Empty)
+        } catch {
+          case e: Exception => try {
+            logger.debug("Test connection failed, removing connection from pool, name=%s".format(name))
+            poolSize = poolSize - 1
+            tryo(x.close)
+            (Empty, Failure(e.getMessage))
+          } catch {
+            case e: Exception => (Empty, Failure(e.getMessage))
+          }
+        }
+    }
+    (connection, error)
+  }
 
   def releaseConnection(conn: Connection): Unit = synchronized {
     if (tempMaxSize > maxPoolSize) {

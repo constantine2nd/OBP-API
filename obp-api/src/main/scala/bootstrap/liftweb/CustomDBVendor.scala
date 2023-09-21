@@ -77,7 +77,7 @@ trait CustomProtoDBVendor extends ConnectionManager {
   }
 
   // Tail Recursive function in order to avoid Stack Overflow
-  // PLEASE NOTE: Changing tis function you can break the above named feature
+  // PLEASE NOTE: Changing this function you can break the above named feature
   def newConnection(name: ConnectionIdentifier): Box[Connection] = {
     val (connection: Box[Connection], error: Box[String]) = commonPart(name)
     error.isEmpty match {

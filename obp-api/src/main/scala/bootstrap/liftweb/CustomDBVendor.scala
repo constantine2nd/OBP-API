@@ -91,8 +91,14 @@ trait CustomProtoDBVendor extends ConnectionManager {
       case Nil if poolSize < tempMaxSize =>
         val ret = createOne
         ret.foreach(_.setAutoCommit(false))
-        poolSize = poolSize + 1
-        logger.debug("Created new pool entry. name=%s, poolSize=%d".format(name, poolSize))
+        if(ret.isDefined) {
+          poolSize = poolSize + 1
+          logger.debug("Created new pool entry. name=%s, poolSize=%d".format(name, poolSize))
+        } else {
+          logger.error("Cannot create a new pool entry. name=%s, poolSize=%d, tempMaxSize=%d".format(name, poolSize, tempMaxSize))
+          logger.debug(ret)
+          wait(50L)
+        }
         (ret, false)
 
       case Nil =>

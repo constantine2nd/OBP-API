@@ -76,18 +76,17 @@ trait CustomProtoDBVendor extends ConnectionManager {
     conn.setAutoCommit(false)
   }
 
-  // Tail Recursive function in order to avoid Stack Overflow
-  // PLEASE NOTE: Changing this function you can break the above named feature
+  // Loop function in order to avoid Stack Overflow in case of tail recursion
   def newConnection(name: ConnectionIdentifier): Box[Connection] = {
-    val (connection: Box[Connection], error: Boolean) = commonPart(name)
-    error match {
-      case false => connection
-      case true => newConnection(name)
+    var connection = newConnectionCommonPart(name)
+    while (connection.isEmpty) {
+      connection = newConnectionCommonPart(name)
     }
+    connection
   }
   
-  def commonPart(name: ConnectionIdentifier): (Box[Connection], Boolean) = synchronized {
-   val (connection: Box[Connection], error: Boolean) = pool match {
+  def newConnectionCommonPart(name: ConnectionIdentifier): Box[Connection] = synchronized {
+   val connection: Box[Connection] = pool match {
       case Nil if poolSize < tempMaxSize =>
         val ret = createOne
         ret.foreach(_.setAutoCommit(false))
@@ -99,7 +98,7 @@ trait CustomProtoDBVendor extends ConnectionManager {
           logger.debug(ret)
           wait(50L)
         }
-        (ret, false)
+        ret
 
       case Nil =>
         val curSize = poolSize
@@ -110,26 +109,26 @@ trait CustomProtoDBVendor extends ConnectionManager {
           tempMaxSize += 1
           logger.debug("Temporarily expanding pool. name=%s, tempMaxSize=%d".format(name, tempMaxSize))
         }
-        (Empty, true)
+        Empty
 
       case x :: xs =>
         logger.trace("Found connection in pool, name=%s".format(name))
         pool = xs
         try {
           this.testConnection(x)
-          (Full(x), false)
+          Full(x)
         } catch {
           case e: Exception => try {
             logger.debug("Test connection failed, removing connection from pool, name=%s".format(name))
             poolSize = poolSize - 1
             tryo(x.close)
-            (Empty, true)
+            Empty
           } catch {
-            case e: Exception => (Empty, true)
+            case e: Exception => Empty
           }
         }
     }
-    (connection, error)
+    connection
   }
 
   def releaseConnection(conn: Connection): Unit = synchronized {

@@ -85,7 +85,7 @@ trait CustomProtoDBVendor extends ConnectionManager {
     connection
   }
   
-  def newConnectionCommonPart(name: ConnectionIdentifier): Box[Connection] = synchronized {
+  private def newConnectionCommonPart(name: ConnectionIdentifier): Box[Connection] = synchronized {
    val connection: Box[Connection] = pool match {
       case Nil if poolSize < tempMaxSize =>
         val ret = createOne

@@ -2,10 +2,13 @@ package bootstrap.liftweb
 
 import java.sql.{Connection, DriverManager}
 
+import code.api.util.APIUtil
 import net.liftweb.common.{Box, Empty, Failure, Full, Logger}
 import net.liftweb.db.ConnectionManager
-import net.liftweb.util.ConnectionIdentifier
+import net.liftweb.util.{ConnectionIdentifier, Helpers}
 import net.liftweb.util.Helpers.tryo
+
+import scala.compat.Platform
 
 /**
  * The standard DB vendor.
@@ -79,7 +82,8 @@ trait CustomProtoDBVendor extends ConnectionManager {
   // Loop function in order to avoid Stack Overflow in case of tail recursion
   def newConnection(name: ConnectionIdentifier): Box[Connection] = {
     var connection = newConnectionCommonPart(name)
-    while (connection.isEmpty) {
+    val timeoutTime : Long = Platform.currentTime + Helpers.seconds(7)
+    while (connection.isEmpty && timeoutTime > Platform.currentTime) {
       connection = newConnectionCommonPart(name)
     }
     connection

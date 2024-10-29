@@ -149,6 +149,10 @@ import net.liftweb.sitemap._
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
 import org.apache.commons.io.FileUtils
+import sh.ory.hydra.model.{JsonPatch, OAuth2Client}
+
+import java.util
+
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -820,9 +824,9 @@ class Boot extends MdcLoggable {
     try {
       import scala.concurrent.ExecutionContext.Implicits.global
       // exists hydra clients id
-      val oAuth2ClientIds = HydraUtil.hydraAdmin.listOAuth2Clients(Long.MaxValue, 0L).stream()
-        .map[String](_.getClientId)
-        .collect(Collectors.toSet())
+      import scala.collection.JavaConverters._
+      val oAuth2ClientIds = HydraUtil.oAuth2Api.listOAuth2Clients(null, null, null, null)
+        .asScala.map(_.getClientId)
 
       Consumers.consumers.vend.getConsumersFuture(Nil, None).foreach{ consumers =>
         consumers.filter(consumer => consumer.isActive.get && !oAuth2ClientIds.contains(consumer.key.get))

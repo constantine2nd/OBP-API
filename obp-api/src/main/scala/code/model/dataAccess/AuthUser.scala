@@ -27,7 +27,6 @@ TESOBE (http://www.tesobe.com/)
 package code.model.dataAccess
 
 import java.util.UUID.randomUUID
-
 import code.api.util.CommonFunctions.validUri
 import code.UserRefreshes.UserRefreshes
 import code.accountholders.AccountHolders
@@ -62,10 +61,10 @@ import org.apache.commons.lang3.StringUtils
 import code.util.HydraUtil._
 import com.github.dwickern.macros.NameOf.nameOf
 import com.tesobe.CacheKeyFromArguments
-import sh.ory.hydra.model.AcceptLoginRequest
+import sh.ory.hydra.model.{AcceptOAuth2LoginRequest}
 import net.liftweb.http.S.fmapFunc
 import net.liftweb.sitemap.Loc.{If, LocParam, Template}
-import sh.ory.hydra.api.AdminApi
+import sh.ory.hydra.api.OAuth2Api
 import net.liftweb.sitemap.Loc.strToFailMsg
 
 import scala.concurrent.Future
@@ -1092,10 +1091,10 @@ def restoreSomeSessions(): Unit = {
           integrateWithHydra match {
             case true =>
               if (loginChallenge.isEmpty == false) {
-                val acceptLoginRequest = new AcceptLoginRequest
-                val adminApi: AdminApi = new AdminApi
+                val acceptLoginRequest = new AcceptOAuth2LoginRequest
+                val adminApi: OAuth2Api = new OAuth2Api
                 acceptLoginRequest.setSubject(user.username.get)
-                val result = adminApi.acceptLoginRequest(loginChallenge.getOrElse(""), acceptLoginRequest)
+                val result = adminApi.acceptOAuth2LoginRequest(loginChallenge.getOrElse(""), acceptLoginRequest)
                 S.redirectTo(result.getRedirectTo)
               } else {
                 S.redirectTo(redirect)

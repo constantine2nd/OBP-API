@@ -1,20 +1,20 @@
 package code.util
 
-import java.util.UUID
-
+import java.util
 import code.api.util.APIUtil
 import code.model.Consumer
 import code.model.Consumer.redirectURLRegex
 import code.util.Helper.MdcLoggable
-import com.nimbusds.jose.jwk.gen.{ECKeyGenerator, JWKGenerator, RSAKeyGenerator}
-import com.nimbusds.jose.jwk.{AsymmetricJWK, Curve, ECKey, JWK, KeyUse, RSAKey}
+import com.nimbusds.jose.jwk.gen.{ECKeyGenerator, RSAKeyGenerator}
+import com.nimbusds.jose.jwk.{Curve, JWK, KeyUse}
 import com.nimbusds.jose.{Algorithm, JWSAlgorithm}
 import org.apache.commons.lang3.StringUtils
-import sh.ory.hydra.api.{AdminApi, PublicApi}
+import org.codehaus.jackson.map.ObjectMapper
+import sh.ory.hydra.Configuration
+import sh.ory.hydra.api.OAuth2Api
 import sh.ory.hydra.model.OAuth2Client
-import sh.ory.hydra.{ApiClient, Configuration}
 
-import scala.collection.immutable.List
+import java.util.UUID
 import scala.jdk.CollectionConverters.{mapAsJavaMapConverter, seqAsJavaListConverter}
 
 object HydraUtil extends MdcLoggable{
@@ -51,21 +51,14 @@ object HydraUtil extends MdcLoggable{
 
   val grantTypes = ("authorization_code" :: "client_credentials" :: "refresh_token" :: "implicit" :: Nil).asJava
 
-  lazy val hydraAdmin = {
+  lazy val oAuth2Api = {
     val hydraAdminUrl = APIUtil.getPropsValue("hydra_admin_url")
       .openOrThrowException(s"If props $INTEGRATE_WITH_HYDRA is true, hydra_admin_url value should not be blank")
     val defaultClient = Configuration.getDefaultApiClient
     defaultClient.setBasePath(hydraAdminUrl)
-    new AdminApi(defaultClient)
+    new OAuth2Api(defaultClient)
   }
 
-  lazy val hydraPublic = {
-    val hydraPublicUrl = APIUtil.getPropsValue("hydra_public_url")
-      .openOrThrowException(s"If props $INTEGRATE_WITH_HYDRA is true, hydra_public_url value should not be blank")
-    val apiClient = new ApiClient
-    apiClient.setBasePath(hydraPublicUrl)
-    new PublicApi(apiClient)
-  }
 
 
   /**
@@ -104,9 +97,32 @@ object HydraUtil extends MdcLoggable{
     // Consumer.AppType = Unknown => private_key_jwt
     oAuth2Client.setTokenEndpointAuthMethod(HydraUtil.hydraTokenEndpointAuthMethod)
 
+
+    // Consequence of updating hydra-client library from 1.7.0 to 2.2.0
+    // In order to avoid during Boot.createHydraClients():
+    //    {
+    //      "error": "invalid_client_metadata"
+    //      ,
+    //      "error_description": "The value of one of the Client Metadata fields is invalid and the server has rejected this request. Note that an Authorization Server MAY choose to substitute a valid value for any requested parameter of a Client's Metadata. When token_endpoint_auth_method is 'private_key_jwt', either jwks or jwks_uri must be set."
+    //    }
+    // Please note that privateKey is created but lost
+    if(oAuth2Client.getJwks == null && oAuth2Client.getTokenEndpointAuthMethod.equals("private_key_jwt")) {
+      def toJson(jwksJson: String) =
+        new ObjectMapper().readValue(jwksJson, classOf[util.Map[String, _]])
+      val (privateKey, publicKey) = HydraUtil.createJwk("ES256")
+      val jwksJson = s"""{"keys": [$publicKey]}"""
+      val jwksMap = toJson(jwksJson)
+      oAuth2Client.setJwks(jwksMap)
+    }
+
+    // Consequence of updating hydra-client library from 1.7.0 to 2.2.0
+    // In order to avoid: Expected the field `contacts` to be an array in the JSON string but got `null
+    val contacts: List[String] = Nil
+    oAuth2Client.setContacts(contacts.asJava)
+
     val decoratedClient = fun(oAuth2Client)
     logger.debug(s"oAuth2Client: $oAuth2Client")
-    val oAuth2ClientResult = Some(hydraAdmin.createOAuth2Client(decoratedClient))
+    val oAuth2ClientResult = Some(oAuth2Api.createOAuth2Client(decoratedClient))
     logger.info("createHydraClient process is successful.")
     oAuth2ClientResult
   }

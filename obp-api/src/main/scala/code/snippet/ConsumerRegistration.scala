@@ -27,7 +27,6 @@ TESOBE (http://www.tesobe.com/)
 package code.snippet
 
 import java.util
-
 import code.api.{Constant, DirectLogin}
 import code.api.util.{APIUtil, ErrorMessages, X509}
 import code.consumer.Consumers
@@ -42,6 +41,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.{CssSel, FieldError, Helpers}
 import org.apache.commons.lang3.StringUtils
 import org.codehaus.jackson.map.ObjectMapper
+import sh.ory.hydra.model.OAuth2Client
 
 import scala.collection.immutable.{List, ListMap}
 import scala.jdk.CollectionConverters.seqAsJavaListConverter

@@ -25,11 +25,9 @@ TESOBE (http://www.tesobe.com/)
 
   */
 package code.model
-import java.util.{Collections, Date}
-
-import code.api.util.{APIUtil, CallContext, OBPAscending, OBPDescending, OBPFromDate, OBPLimit, OBPOffset, OBPOrdering, OBPQueryParam, OBPToDate}
 import code.api.util.CommonFunctions.validUri
 import code.api.util.migration.Migration.DbFunction
+import code.api.util._
 import code.consumer.{Consumers, ConsumersProvider}
 import code.model.AppType.{Confidential, Public, Unknown}
 import code.model.dataAccess.ResourceUser
@@ -39,18 +37,18 @@ import code.users.Users
 import code.util.Helper.MdcLoggable
 import code.util.HydraUtil
 import code.util.HydraUtil._
-import code.views.system.{AccountAccess, ViewDefinition}
 import com.github.dwickern.macros.NameOf
 import com.openbankproject.commons.ExecutionContext.Implicits.global
-import com.openbankproject.commons.model.{BankIdAccountId, User, View}
 import net.liftweb.common._
 import net.liftweb.http.S
-import net.liftweb.mapper.{LongKeyedMetaMapper, _}
-import net.liftweb.util.Helpers.{now, _}
+import net.liftweb.mapper._
+import net.liftweb.util.Helpers._
 import net.liftweb.util.{FieldError, Helpers}
 import org.apache.commons.lang3.StringUtils
+import sh.ory.hydra.model.JsonPatch
 
-import scala.collection.immutable.List
+import java.util.{Collections, Date}
+import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
 
@@ -220,7 +218,7 @@ object MappedConsumersProvider extends ConsumersProvider with MdcLoggable {
   }
 
   def deleteConsumer(consumer: Consumer): Boolean = {
-    if(integrateWithHydra) hydraAdmin.deleteOAuth2Client(consumer.key.get)
+    if(integrateWithHydra) oAuth2Api.deleteOAuth2Client(consumer.key.get)
     Consumer.delete_!(consumer)
   }
 
@@ -283,21 +281,33 @@ object MappedConsumersProvider extends ConsumersProvider with MdcLoggable {
         // In case we use Hydra ORY as Identity Provider we update corresponding client at Hydra side a well
         if(integrateWithHydra && isActive.isDefined) {
           val clientId = c.key.get
-          val existsOAuth2Client = Box.tryo(hydraAdmin.getOAuth2Client(clientId))
+          val existsOAuth2Client = Box.tryo(oAuth2Api.getOAuth2Client(clientId))
             .filter(null !=)
           // TODO Involve Hydra ORY version with working update mechanism
           if (isActive == Some(false) && existsOAuth2Client.isDefined) {
               existsOAuth2Client
               .map { oAuth2Client =>
-                oAuth2Client.setClientSecretExpiresAt(System.currentTimeMillis())
-                hydraAdmin.updateOAuth2Client(clientId, oAuth2Client)
+                // Create the JSON patch for client_secret_expires_at
+                val patchPayload = new JsonPatch()
+                patchPayload.setOp("replace")
+                patchPayload.setPath("/grant_types")
+                patchPayload.setValue(Collections.emptyList[Object]())
+                // Apply the patches
+                val patches = List(patchPayload).asJava
+                oAuth2Api.patchOAuth2Client(clientId, patches)
               }
           }
           if(isActive == Some(true) && existsOAuth2Client.isDefined) {
             existsOAuth2Client
               .map { oAuth2Client =>
-                oAuth2Client.setClientSecretExpiresAt(0L)
-                hydraAdmin.updateOAuth2Client(clientId, oAuth2Client)
+                // set grantTypes to correct value in order to enable the client
+                val patchPayload = new JsonPatch()
+                patchPayload.setOp("replace")
+                patchPayload.setPath("/grant_types")
+                patchPayload.setValue(HydraUtil.grantTypes)
+                // Apply the patches
+                val patches = List(patchPayload).asJava
+                oAuth2Api.patchOAuth2Client(clientId, patches)
               }
           }
         }

@@ -1,3 +1,88 @@
+## 🚀 Next Steps and Action Plan
+
+### Phase 1: Replace HTTP Client Usage (PRIORITY)
+1. **Replace AkkaHttpClient** in `code/util/AkkaHttpClient.scala` with StandardHttpClient
+2. **Update HTTP method references** in dynamic endpoints and API utilities
+3. **Test HTTP functionality** to ensure requests still work properly
+
+### Phase 2: Remove Actor System Dependencies
+1. **Analyze AkkaConnector_vDec2018.scala** - largest dependency (6289+ lines)
+2. **Replace actor-based communication** with direct method calls or message queues
+3. **Remove ObpActorSystem and ObpLookupSystem** actor systems
+4. **Update actor-based connectors** to use standard Scala/Java concurrency
+
+### Phase 3: Update Maven Dependencies
+1. **Remove Akka dependencies** from `obp-api/pom.xml`:
+   - `akka-http-core_2.12`
+   - `akka-actor_2.12` 
+   - `akka-remote_2.12`
+   - `akka-slf4j_2.12`
+   - `adapter-akka-commons`
+2. **Test compilation** after each dependency removal
+3. **Update any remaining imports** and references
+
+### Phase 4: Testing and Validation
+1. **Run full test suite** with `export MAVEN_OPTS="-Xss128m" && mvn install -pl .,obp-commons && mvn jetty:run -pl obp-api`
+2. **Verify all connectors work** without Akka dependencies
+3. **Performance testing** to ensure no regression
+
+---
+
+## Latest Commit Progress Update
+
+**Commit:** f5588b618 - "Fix Akka HTTP client type mismatch errors and replace with StandardHttpClient"  
+**Date:** Thu Dec 11 10:39:42 2025 +0100  
+**Status:** ✅ COMPILATION SUCCESSFUL
+
+### Changes Made in Latest Commit:
+- **Fixed type mismatch errors** between StandardHttpClient.HttpMethods and akka.http.scaladsl.model.HttpMethod
+- **Updated RestConnector_vMar2019.scala** to use proper Akka HttpMethods for method calls
+- **Updated RestConnectorBuilder.scala** to generate correct Akka HttpMethods calls
+- **Fixed async handling** in CardanoConnector_vJun2025.scala and EthereumConnector_vSept2025.scala
+- **Added missing ExecutionContext imports** for Future operations
+- **Replaced .flatten calls** on Futures with proper async handling
+- **Maintained backward compatibility** with existing connector interface
+
+### Files Modified:
+- `obp-api/src/main/scala/code/bankconnectors/rest/RestConnector_vMar2019.scala` - 147 changes
+- `obp-api/src/main/scala/code/bankconnectors/rest/RestConnectorBuilder.scala` - Updated
+- `obp-api/src/main/scala/code/bankconnectors/cardano/CardanoConnector_vJun2025.scala` - 20 changes
+- `obp-api/src/main/scala/code/bankconnectors/ethereum/EthereumConnector_vSept2025.scala` - 21 changes
+- `obp-api/src/main/scala/code/util/StandardHttpClient.scala` - 179 lines added
+- `obp-api/src/main/scala/code/api/util/DynamicUtil.scala` - Template updates
+
+### Current Status:
+✅ **Maven compilation successful** with `export MAVEN_OPTS="-Xss128m" && mvn compile -pl .,obp-commons,obp-api`  
+⚠️ **Only warnings present**, no compilation errors  
+🔍 **Akka dependencies still present** in pom.xml and some source files
+
+---
+
+## Remaining Akka Dependencies Analysis
+
+### 🔴 Akka Dependencies in Maven POM (obp-api/pom.xml):
+1. `akka-http-core_2.12` (v10.1.6)
+2. `akka-actor_2.12` (v2.5.32)
+3. `akka-remote_2.12` (v2.5.32)
+4. `akka-slf4j_2.12` (v2.5.32)
+5. `adapter-akka-commons` (v1.1.0)
+
+### 🔴 Scala Files Still Using Akka Imports (12 files):
+1. `code/actorsystem/ObpActorSystem.scala` - Core actor system
+2. `code/actorsystem/ObpLookupSystem.scala` - Lookup system
+3. `code/api/dynamic/endpoint/helper/DynamicEndpointHelper.scala` - HTTP methods
+4. `code/api/util/DynamicUtil.scala` - Template generation
+5. `code/api/util/NewStyle.scala` - API utilities
+6. `code/bankconnectors/akka/AkkaConnector_vDec2018.scala` - Main Akka connector
+7. `code/bankconnectors/akka/actor/AkkaConnectorActorInit.scala` - Actor initialization
+8. `code/bankconnectors/akka/actor/AkkaConnectorHelperActor.scala` - Helper actors
+9. `code/bankconnectors/akka/actor/SouthSideActorOfAkkaConnector.scala` - South side actors
+10. `code/bankconnectors/package.scala` - HTTP method handling
+11. `code/customer/CustomerProvider.scala` - Uses akka.pattern.pipe
+12. `code/util/AkkaHttpClient.scala` - HTTP client implementation
+
+---
+
 ## User
 
 Please take a look at the project and analze how to get rid of akka dependecies
@@ -40,6 +125,7 @@ OBP-API/.sdkmanrc
 OBP-API/CONTRIBUTING.md
 OBP-API/FAQ.md
 OBP-API/GNU_AFFERO_GPL_V3_19_Nov_1997.txt
+OBP-
 OBP-API/Harmony_Individual_Contributor_Assignment_Agreement.txt
 OBP-API/LIFT_HTTP4S_COEXISTENCE.md
 OBP-API/NOTICE

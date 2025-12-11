@@ -27,7 +27,7 @@ import code.api.util.APIUtil._
 import code.api.util.{CallContext, ErrorMessages, NewStyle}
 import code.api.v6_0_0.TransactionRequestBodyCardanoJsonV600
 import code.bankconnectors._
-import code.util.AkkaHttpClient._
+import code.util.StandardHttpClient
 import code.util.Helper
 import code.util.Helper.MdcLoggable
 import com.openbankproject.commons.model._
@@ -36,12 +36,13 @@ import net.liftweb.json
 import net.liftweb.json.JValue
 
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
 
 trait CardanoConnector_vJun2025 extends Connector with MdcLoggable {
   //this one import is for implicit convert, don't delete
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   implicit override val nameOfConnector = CardanoConnector_vJun2025.toString
   
@@ -83,20 +84,15 @@ trait CardanoConnector_vJun2025 extends Connector with MdcLoggable {
                      |  $metadataJson
                      |}""".stripMargin
 
-      request = prepareHttpRequest(paramUrl, _root_.akka.http.scaladsl.model.HttpMethods.POST, _root_.akka.http.scaladsl.model.HttpProtocol("HTTP/1.1"), jsonToSend)
-      _ = logger.debug(s"CardanoConnector_vJun2025.makePaymentv210 request is : $request")
+      _ = logger.debug(s"CardanoConnector_vJun2025.makePaymentv210 making POST request to: $paramUrl")
 
-      response <- NewStyle.function.tryons(s"${ErrorMessages.UnknownError} Failed to make HTTP request to Cardano API", 500, callContext) {
-        makeHttpRequest(request)
-      }.flatten
+      response <- StandardHttpClient.post(paramUrl, jsonToSend)
 
-      responseBody <- NewStyle.function.tryons(s"${ErrorMessages.UnknownError} Failed to extract response body", 500, callContext) {
-        response.entity.dataBytes.runFold(_root_.akka.util.ByteString(""))(_ ++ _).map(_.utf8String)
-      }.flatten
+      responseBody = response.body
       
-      _ <- Helper.booleanToFuture(s"${ErrorMessages.UnknownError} Cardano API returned error: ${response.status.value}", 500, callContext) {
+      _ <- Helper.booleanToFuture(s"${ErrorMessages.UnknownError} Cardano API returned error: ${response.statusCode}", 500, callContext) {
         logger.debug(s"CardanoConnector_vJun2025.makePaymentv210 response jsonString is : $responseBody")
-        response.status.isSuccess()
+        response.statusCode >= 200 && response.statusCode < 300
       }
 
       transactionId <- NewStyle.function.tryons(s"${ErrorMessages.InvalidJsonFormat} Failed to parse Cardano API response", 500, callContext) {

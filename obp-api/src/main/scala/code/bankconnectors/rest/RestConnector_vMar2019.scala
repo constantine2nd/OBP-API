@@ -23,10 +23,9 @@ Osloerstrasse 16/17
 Berlin 13359, Germany
 */
 
-import _root_.akka.stream.StreamTcpException
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.util.ByteString
+import _root_.akka.http.scaladsl.model.{HttpMethod, HttpMethods}
+import java.net.{ConnectException, UnknownHostException}
+import net.liftweb.json.JsonParser.ParseException
 import code.api.APIFailureNewStyle
 import code.api.ResourceDocs1_4_0.MessageDocsSwaggerDefinitions
 import code.api.dynamic.endpoint.helper.MockResponseHolder
@@ -37,10 +36,11 @@ import code.api.util.RSAUtil.{computeXSign, getPrivateKeyFromString}
 import code.api.util.{APIUtil, CallContext, OBPQueryParam}
 import code.bankconnectors._
 import code.context.UserAuthContextProvider
-import code.util.AkkaHttpClient._
+import code.util.StandardHttpClient
 import code.util.Helper
 import code.util.Helper.MdcLoggable
 import com.openbankproject.commons.dto._
+import com.openbankproject.commons.ExecutionContext.Implicits.global
 import com.openbankproject.commons.model.enums.StrongCustomerAuthenticationStatus.SCAStatus
 import com.openbankproject.commons.model.enums._
 import com.openbankproject.commons.model.{Meta, _}
@@ -67,6 +67,9 @@ import scala.reflect.runtime.universe._
 trait RestConnector_vMar2019 extends Connector with MdcLoggable {
   //this one import is for implicit convert, don't delete
   import com.openbankproject.commons.model.{AmountOfMoney, CreditLimit, CreditRating, CustomerFaceImage}
+  
+  // Constants that were previously imported from AkkaHttpClient
+  val httpRequestTimeout = APIUtil.getPropsAsIntValue("rest2019_connector_timeout").openOr(59)
 
   implicit override val nameOfConnector = RestConnector_vMar2019.toString
 
@@ -85,6 +88,7 @@ trait RestConnector_vMar2019 extends Connector with MdcLoggable {
   val errorCodeExample = "INTERNAL-OBP-ADAPTER-6001: ..."
 
   val connectorName = "rest_vMar2019"
+
 
 
 //---------------- dynamic start -------------------please don't modify this line
@@ -7097,44 +7101,41 @@ trait RestConnector_vMar2019 extends Connector with MdcLoggable {
       }
 
     val jsonToSend = if(jValue == JNothing) "" else compactRender(jValue)
-    val request = prepareHttpRequest(paramUrl, method, HttpProtocol("HTTP/1.1"), jsonToSend).withHeaders(buildHeaders(paramUrl,jsonToSend,callContext))
-    logger.debug(s"RestConnector_vMar2019 request is : $request")
-    val responseFuture = makeHttpRequest(request)
+    logger.debug(s"RestConnector_vMar2019 making ${method} request to: $paramUrl")
+    val httpMethod = method.value match {
+      case "GET" => code.util.StandardHttpClient.HttpMethods.GET
+      case "POST" => code.util.StandardHttpClient.HttpMethods.POST
+      case "PUT" => code.util.StandardHttpClient.HttpMethods.PUT
+      case "DELETE" => code.util.StandardHttpClient.HttpMethods.DELETE
+      case _ => code.util.StandardHttpClient.HttpMethods.POST
+    }
+    val responseFuture = code.util.StandardHttpClient.makeHttpRequest(paramUrl, httpMethod, jsonToSend)
 
-    val result: Future[(Box[JValue], Option[CallContext])] = responseFuture.map {
-      case HttpResponse(status, _, entity@_, _) =>
-        (status, entity)
-    }.flatMap {
-      case (status, entity) if status.isSuccess() =>
-        this.extractBody(entity)
-          .map{
-            case v if StringUtils.isBlank(v) =>
-              (Full{
-                ("code", status.intValue()) ~ ("value", JString(""))
-              }, callContext)
-            case v =>
-              (Full{
-                ("code", status.intValue()) ~ ("value", json.parse(v))
-              }, callContext)
-          }
-      case (status, entity) => {
-        val future: Future[JObject] = extractBody(entity) map { msg =>
-          try {
-            ("code", status.intValue()) ~ ("value", json.parse(msg))
-          } catch {
-            case _: ParseException => ("code", status.intValue()) ~ ("value", JString(msg))
-          }
+    val result: Future[(Box[JValue], Option[CallContext])] = responseFuture.map { response =>
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (StringUtils.isBlank(response.body)) {
+          (Full{
+            ("code", response.statusCode) ~ ("value", JString(""))
+          }, callContext)
+        } else {
+          (Full{
+            ("code", response.statusCode) ~ ("value", json.parse(response.body))
+          }, callContext)
         }
-        future.map { jObject =>
-          (Full(jObject), callContext)
+      } else {
+        val jObject = try {
+          ("code", response.statusCode) ~ ("value", json.parse(response.body))
+        } catch {
+          case _: ParseException => ("code", response.statusCode) ~ ("value", JString(response.body))
         }
+        (Full(jObject), callContext)
       }
     }.recoverWith {
       case e: Exception if e.getMessage.contains(s"$httpRequestTimeout seconds") =>
         Future.failed(
           new Exception(s"$AdapterTimeOurError Please Check Adapter Side, the response should be returned to OBP-Side in $httpRequestTimeout seconds. Details: ${e.getMessage}", e)
         )
-      case e: StreamTcpException if classOf[ConnectException].isInstance(e.getCause) || classOf[UnknownHostException].isInstance(e.getCause)=>
+      case e: Exception if (e.getCause != null && (classOf[ConnectException].isInstance(e.getCause) || classOf[UnknownHostException].isInstance(e.getCause))) =>
         logger.error(s"dynamic endpoint corresponding adapter function not available, the http method is: $method, url is ${method.value}", e)
         Future.failed(new Exception(s"$AdapterFunctionNotImplemented Please Check Rest Adapter Side! http method: ${method.value}, url: $paramUrl", e))
       case e: Exception =>
@@ -7151,34 +7152,33 @@ trait RestConnector_vMar2019 extends Connector with MdcLoggable {
     uri: String,
     entityJsonString: String,
     callContext: Option[CallContext]
-  ): List[HttpHeader] = {
+  ): Map[String, String] = {
     
     val needSignatureHead =  APIUtil.getPropsAsBoolValue("rest_connector_sends_x-sign_header", false) 
     val generalContext = callContext.map(createBasicUserAuthContextJsonFromCallContext(_)).getOrElse(List.empty[BasicGeneralContext])
-    val headersFromGeneralContext = generalContext.map(generalContext => RawHeader(generalContext.key,generalContext.value))
+    val headersFromGeneralContext = generalContext.map(generalContext => (generalContext.key, generalContext.value)).toMap
     
     val basicUserAuthContexts = UserAuthContextProvider.userAuthContextProvider.vend.getUserAuthContextsBox(callContext.map(_.userId).getOrElse("")).getOrElse(List.empty[UserAuthContext])
-    val headersFromUserAuthContext = basicUserAuthContexts.filterNot(_.key == "private-key").map(userAuthContext =>RawHeader(userAuthContext.key,userAuthContext.value))
+    val headersFromUserAuthContext = basicUserAuthContexts.filterNot(_.key == "private-key").map(userAuthContext => (userAuthContext.key, userAuthContext.value)).toMap
 
     val timeStamp = Instant.now.getEpochSecond.toString
     logger.debug(s"x-timestamp: $timeStamp")
-    
+
     val extraHeaders = if(needSignatureHead){
       val inputMessage = s"""${timeStamp}${uri}${entityJsonString}"""
       val privateKeyValue = basicUserAuthContexts.find(_.key =="private-key").map(_.value).getOrElse("")
       val privateKey = getPrivateKeyFromString(privateKeyValue)
       val xSign = computeXSign(inputMessage, privateKey)
       logger.debug(s"x-sign: $xSign")
-      List(RawHeader("x-timestamp",timeStamp),RawHeader("x-sign",xSign))
+      Map("x-timestamp" -> timeStamp, "x-sign" -> xSign)
     } else {
-      List(RawHeader("x-timestamp",timeStamp))
+      Map("x-timestamp" -> timeStamp)
     }
-    val headers = headersFromUserAuthContext++extraHeaders++headersFromGeneralContext
+    val headers = headersFromUserAuthContext ++ extraHeaders ++ headersFromGeneralContext
     
     logger.debug(s"obp headers: ${headers}")
 
     headers
-    
   }
 
   private[this] def buildAdapterCallContext(callContext: Option[CallContext]): OutboundAdapterCallContext = callContext.map(_.toOutboundAdapterCallContext).orNull
@@ -7283,29 +7283,35 @@ trait RestConnector_vMar2019 extends Connector with MdcLoggable {
         compactRender(builtJson)
       case _ => net.liftweb.json.Serialization.write(outBound)
     }
-    val request = prepareHttpRequest(url, method, HttpProtocol("HTTP/1.1"), outBoundJson).withHeaders(buildHeaders(url, outBoundJson, callContext))
-    logger.debug(s"RestConnector_vMar2019 request is : $request")
-    val responseFuture = makeHttpRequest(request)
-    responseFuture.map {
-      case HttpResponse(status, _, entity@_, _) => (status, entity)
-    }.flatMap {
-      case (status, entity) if status.isSuccess() => extractEntity[T](entity, inBoundMapping)
-      case (status, _) if status.intValue == 404 =>
+    logger.debug(s"RestConnector_vMar2019 making ${method} request to: $url")
+    val httpMethod = method.value match {
+      case "GET" => code.util.StandardHttpClient.HttpMethods.GET
+      case "POST" => code.util.StandardHttpClient.HttpMethods.POST
+      case "PUT" => code.util.StandardHttpClient.HttpMethods.PUT
+      case "DELETE" => code.util.StandardHttpClient.HttpMethods.DELETE
+      case _ => code.util.StandardHttpClient.HttpMethods.POST
+    }
+    val responseFuture = code.util.StandardHttpClient.makeHttpRequest(url, httpMethod, outBoundJson)
+    responseFuture.flatMap { response =>
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        extractEntity[T](response.body, inBoundMapping)
+      } else if (response.statusCode == 404) {
         Future {
           val errorMsg = s"$ResourceDoesNotExist the resource url is: $url"
-          ParamFailure(errorMsg, APIFailureNewStyle(errorMsg, status.intValue()))
+          ParamFailure(errorMsg, APIFailureNewStyle(errorMsg, response.statusCode))
         }
-      case (status, entity) => {
-          val future: Future[Box[Box[T]]] = extractBody(entity) map { msg =>
-            tryo {
-            val errorMsg = parse(msg).extract[ErrorMessage]
-            val failure: Box[T] = ParamFailure(errorMsg.message, APIFailureNewStyle(errorMsg.message, status.intValue()))
-            failure
-          } ~> APIFailureNewStyle(msg, status.intValue())
-        }
-        future.map{
-          case Full(v) => v
-          case e: EmptyBox => e
+      } else {
+        val result: Box[Box[T]] = tryo {
+          val errorMsg = parse(response.body).extract[ErrorMessage]
+          val failure: Box[T] = ParamFailure(errorMsg.message, APIFailureNewStyle(errorMsg.message, response.statusCode))
+          failure
+        } ~> APIFailureNewStyle(response.body, response.statusCode)
+        
+        Future.successful {
+          result match {
+            case Full(v) => v
+            case e: EmptyBox => e
+          }
         }
       }
     }.map(Helper.convertToId(_)) recoverWith {
@@ -7315,18 +7321,15 @@ trait RestConnector_vMar2019 extends Connector with MdcLoggable {
     }
   }
 
-  private[this] def extractBody(responseEntity: ResponseEntity): Future[String] = responseEntity.toStrict(2.seconds) flatMap { e =>
-    e.dataBytes
-      .runFold(ByteString.empty) { case (acc, b) => acc ++ b }
-      .map(_.utf8String)
-  }
 
-  private[this] def extractEntity[T: TypeTag: Manifest](responseEntity: ResponseEntity, inBoundMapping: Box[JObject]): Future[Box[T]] = {
-    this.extractBody(responseEntity)
-      .map({
+
+  private[this] def extractEntity[T: TypeTag: Manifest](body: String, inBoundMapping: Box[JObject]): Future[Box[T]] = {
+    Future.successful {
+      body match {
         case null => Empty
         case str => Connector.extractAdapterResponse[T](str, inBoundMapping)
-      })
+      }
+    }
   }
 
   /**

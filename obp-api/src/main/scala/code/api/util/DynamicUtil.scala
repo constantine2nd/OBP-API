@@ -257,7 +257,7 @@ object DynamicUtil extends MdcLoggable{
       |import code.bankconnectors._
       |import code.customer.internalMapping.MappedCustomerIdMappingProvider
       |import code.model.dataAccess.internalMapping.MappedAccountIdMappingProvider
-      |import code.util.AkkaHttpClient._
+      |import code.util.StandardHttpClient
       |import code.util.Helper.MdcLoggable
       |import com.openbankproject.commons.dto.{InBoundTrait, _}
       |import com.openbankproject.commons.model.enums.StrongCustomerAuthentication.SCA

@@ -4,7 +4,7 @@ import code.api.util.APIUtil._
 import code.api.util.{CallContext, ErrorMessages, NewStyle}
 import code.api.v6_0_0.TransactionRequestBodyEthereumJsonV600
 import code.bankconnectors._
-import code.util.AkkaHttpClient._
+import code.util.StandardHttpClient
 import code.util.Helper
 import code.util.Helper.MdcLoggable
 import com.openbankproject.commons.model._
@@ -13,6 +13,7 @@ import net.liftweb.json
 import net.liftweb.json.JValue
 
 import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * EthereumConnector_vSept2025
@@ -26,6 +27,7 @@ import scala.collection.mutable.ArrayBuffer
   *  - BankAccount.accountId.value is expected to hold the 0x Ethereum address
   */
 trait EthereumConnector_vSept2025 extends Connector with MdcLoggable {
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   implicit override val nameOfConnector = EthereumConnector_vSept2025.toString
 
@@ -87,20 +89,13 @@ trait EthereumConnector_vSept2025 extends Connector with MdcLoggable {
     }
 
     for {
-      request <- NewStyle.function.tryons(ErrorMessages.UnknownError + " Failed to build HTTP request", 500, callContext) {prepareHttpRequest(rpcUrl, _root_.akka.http.scaladsl.model.HttpMethods.POST, _root_.akka.http.scaladsl.model.HttpProtocol("HTTP/1.1"), payload)
-      }
+      response <- StandardHttpClient.post(rpcUrl, payload)
 
-      response <- NewStyle.function.tryons(ErrorMessages.UnknownError + " Failed to call Ethereum RPC", 500, callContext) {
-        makeHttpRequest(request)
-      }.flatten
+      body = response.body
 
-      body <- NewStyle.function.tryons(ErrorMessages.UnknownError + " Failed to read Ethereum RPC response", 500, callContext) {
-        response.entity.dataBytes.runFold(_root_.akka.util.ByteString(""))(_ ++ _).map(_.utf8String)
-      }.flatten
-
-      _ <- Helper.booleanToFuture(ErrorMessages.UnknownError + s" Ethereum RPC returned error: ${response.status.value}", 500, callContext) {
+      _ <- Helper.booleanToFuture(ErrorMessages.UnknownError + s" Ethereum RPC returned error: ${response.statusCode}", 500, callContext) {
         logger.debug(s"EthereumConnector_vSept2025.makePaymentv210 response: $body")
-        response.status.isSuccess()
+        response.statusCode >= 200 && response.statusCode < 300
       }
 
       txIdBox <- {
@@ -110,7 +105,7 @@ trait EthereumConnector_vSept2025 extends Connector with MdcLoggable {
         if (errorNode != json.JNothing && errorNode != json.JNull) {
           val msg = (errorNode \ "message").extractOpt[String].getOrElse("Unknown Ethereum RPC error")
           val code = (errorNode \ "code").extractOpt[BigInt].map(_.toString).getOrElse("?")
-          scala.concurrent.Future.successful(Failure(s"Ethereum RPC error(code=$code): $msg"))
+          Future.successful(Failure(s"Ethereum RPC error(code=$code): $msg"))
         } else {
           NewStyle.function.tryons(ErrorMessages.InvalidJsonFormat + " Failed to parse Ethereum RPC response", 500, callContext) {
             val resultHashOpt: Option[String] =
